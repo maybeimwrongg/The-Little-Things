@@ -46,23 +46,38 @@ nav#nav{position:fixed;z-index:2;inset:auto 0 0;display:grid;grid-template-colum
 .home-summary p{margin:0;font-size:15px}.home-summary strong{font-size:28px;display:block;margin-bottom:4px}
 @media(min-width:760px){nav#nav{inset:auto calc((100% - 730px) / 2) 14px;border:1px solid var(--line);border-radius:16px}}
 
-:root{--sage:#664655;--dark:#382823;--muted:#6d5852;--cream:#faf7f4;--paper:#fffdfb;--line:#e8dcd6}
+:root,[data-aesthetic="diary"]{color-scheme:light;--sage:#664655;--dark:#382823;--muted:#6d5852;--cream:#faf7f4;--paper:#fffdfb;--line:#e8dcd6;--soft:#f4edf5;--selected:#e8daef;--sticker:#eaddf0;--accent:#ce9d9c}
 body{line-height:1.5}
 .app-header{padding:22px 20px 15px;border-bottom:1px solid var(--line)}
 .brand h1{font:normal 28px Georgia,serif;letter-spacing:-.045em}
 #view>h2{font:normal clamp(32px, 7vw, 46px) Georgia,serif;letter-spacing:-.055em;margin:24px 3px 14px}
 .panel{padding:18px;border-radius:12px;margin:15px 0}
 .panel h2{font:normal 24px Georgia,serif}
-.navbtn,.secondary,.section-link{background:#f4edf5}
-.navbtn.active{background:#e8daef;color:#543d57}
-nav#nav{background:#fffdfb}
-.tag{background:#f4edf5}
-input,textarea,select{background:#fffdfa}
-.welcome-note{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:#eaddf0;border:1px solid #dac7e4;border-radius:12px;padding:17px 17px;margin:18px 0 0}
+.navbtn,.secondary,.section-link{background:var(--soft)}
+.navbtn.active{background:var(--selected);color:var(--dark)}
+nav#nav{background:var(--paper)}
+nav#nav[hidden]{display:none}
+.tag{background:var(--soft)}
+input,textarea,select{background:var(--paper)}
+.welcome-note{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:var(--sticker);border:1px solid var(--line);border-radius:12px;padding:17px 17px;margin:18px 0 0}
 .welcome-note p{margin:0;font:italic clamp(22px,5.7vw,30px) Georgia,serif;overflow-wrap:anywhere}
-.welcome-note p span{text-decoration:underline;text-decoration-color:#ce9d9c;text-decoration-thickness:3px;text-underline-offset:5px}
+.welcome-note p span{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:3px;text-underline-offset:5px}
 .welcome-note button{min-height:44px;border:0;background:transparent;text-decoration:underline;text-underline-offset:3px;color:var(--dark);font-size:14px}
 .task-summary{margin:0 3px 12px;color:var(--muted);font-size:15px}
+
+[data-aesthetic="garden"]{color-scheme:light;--sage:#345641;--dark:#23382b;--muted:#4d6554;--cream:#f7f6eb;--paper:#fffef7;--line:#d9e2d2;--soft:#eef3e8;--selected:#dce9d8;--sticker:#e1ebda;--accent:#90a980}
+[data-aesthetic="cherry"]{color-scheme:light;--sage:#912741;--dark:#4b2630;--muted:#73505b;--cream:#fff6f2;--paper:#fffdf8;--line:#efdadb;--soft:#fae9eb;--selected:#f5d7df;--sticker:#fae3e8;--accent:#cf7990}
+[data-aesthetic="midnight"]{color-scheme:dark;--sage:#765cb0;--dark:#f7f2ff;--muted:#cec2df;--cream:#18182b;--paper:#25253e;--line:#49425f;--soft:#35324f;--selected:#50456f;--sticker:#3b345a;--accent:#ac91d3}
+[data-aesthetic="midnight"] .delete{color:#f0aeba}
+[data-aesthetic="midnight"] .item.done .name{color:var(--muted)}
+[data-aesthetic="cherry"] .welcome-note,[data-aesthetic="cherry"] .theme-sticker{background-image:repeating-linear-gradient(90deg,transparent 0 12px,#b72d5712 12px 24px),repeating-linear-gradient(0deg,transparent 0 12px,#b72d5712 12px 24px)}
+.theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+.theme-choice{display:grid;gap:8px;padding:11px;text-align:left;border:2px solid var(--line);border-radius:12px;background:var(--cream);color:var(--dark)}
+.theme-choice[aria-pressed="true"]{border-color:var(--sage)}
+.theme-sticker{display:block;padding:7px;border-radius:7px;background:var(--sticker);font:italic 16px Georgia,serif}
+.theme-task{font-size:14px;color:var(--dark)}
+.theme-action{justify-self:start;background:var(--sage);color:#fff;border-radius:6px;padding:3px 7px;font-size:13px}
+@media(max-width:360px){.theme-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -79,7 +94,34 @@ circles:[
 activeCircle:1
 };
 let data;try{data={...defaults,...JSON.parse(localStorage.getItem("littleThingsData")||"{}")}}catch(e){data=structuredClone(defaults)}
-let section="Home";
+const aesthetics = [
+ ["diary", "Lavender Diary"],
+ ["garden", "Sunday Garden"],
+ ["cherry", "Cherry Gingham"],
+ ["midnight", "Midnight Ink"]
+];
+const aestheticKey = "littleThingsAesthetic";
+let savedAesthetic;
+try { savedAesthetic = localStorage.getItem(aestheticKey); } catch {}
+let aesthetic = aesthetics.some(([id]) => id === savedAesthetic) ? savedAesthetic : "diary";
+let choosingFirstTheme = !savedAesthetic;
+let section = choosingFirstTheme ? "Appearance" : "Home";
+
+function applyAesthetic() {
+ document.documentElement.dataset.aesthetic = aesthetic;
+ const background = getComputedStyle(document.documentElement).getPropertyValue("--cream").trim();
+ document.querySelector('meta[name="theme-color"]').content = background;
+}
+
+function chooseAesthetic(id) {
+ aesthetic = id;
+ try { localStorage.setItem(aestheticKey, id); } catch {}
+ applyAesthetic();
+ if (choosingFirstTheme) section = "Home";
+ choosingFirstTheme = false;
+ render();
+ if (section === "Appearance") document.querySelector('[data-set-aesthetic="' + id + '"]').focus();
+}
 function save(){localStorage.setItem("littleThingsData",JSON.stringify(data));stats()}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function stats() {
@@ -92,6 +134,7 @@ function nav() {
  tabs.push(["More", "⋯"]);
  const active = primary.includes(section) ? section : "More";
  const navigation = document.getElementById("nav");
+ navigation.hidden = choosingFirstTheme;
  navigation.innerHTML = tabs.map(([name, icon]) => `<button class="navbtn ${active === name ? "active" : ""}" data-section="${name}" ${active === name ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon}</span>${name}</button>`).join("");
  navigation.querySelectorAll("[data-section]").forEach(button => {
   button.onclick = () => { section = button.dataset.section; render(); window.scrollTo(0, 0); };
@@ -110,11 +153,18 @@ if (section === "Home") {
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
   + panel("Upcoming plans", upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
 }
+if (section === "Appearance") {
+ v = '<h2>' + (choosingFirstTheme ? 'Pick your aesthetic' : 'Appearance') + '</h2>'
+  + '<div class="theme-grid">' + aesthetics.map(([id, name]) =>
+   `<button class="theme-choice" data-aesthetic="${id}" data-set-aesthetic="${id}" aria-pressed="${aesthetic === id}"><strong>${name}</strong><span class="theme-sticker" aria-hidden="true">Welcome back</span><span class="theme-task" aria-hidden="true">○ Pick up groceries</span><span class="theme-action" aria-hidden="true">Add task</span></button>`
+  ).join("") + '</div>'
+  + (choosingFirstTheme ? '<button class="secondary" data-set-aesthetic="diary">Skip for now</button>' : '');
+}
 if (section === "More") {
  const links = sections.filter(([name]) => !["Home", "Calendar", "Tasks"].includes(name));
  v = '<h2>More</h2>' + panel("Your tools", '<div class="section-grid">'
   + links.map(([name, icon]) => `<button class="section-link" data-go="${name}"><span aria-hidden="true">${icon}</span>${name}</button>`).join("")
-  + '</div>');
+  + '<button class="section-link" data-go="Appearance">Appearance</button></div>');
 }
 if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
 if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
@@ -158,6 +208,9 @@ if(section==="Projects"){v=panel("Creative projects",data.projects.map(p=>`<div 
 if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan today's priorities","Evening reset"];v=panel("Daily routines",labels.map((x,i)=>`<div class="item"><input type="checkbox" data-routine="${i}" ${data.routines[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetRoutine">Reset checklist</button>`)}
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
+ document.querySelectorAll("[data-set-aesthetic]").forEach(button => {
+  button.onclick = () => chooseAesthetic(button.dataset.setAesthetic);
+ });
  const editGreeting = document.getElementById("editGreeting");
  if (editGreeting) editGreeting.onclick = () => {
   const name = window.prompt("What name should the app greet you with?", data.displayName || "");
@@ -209,6 +262,7 @@ let rr=document.getElementById("resetRoutine");if(rr)rr.onclick=()=>{data.routin
 let cs=document.getElementById("copyShop");if(cs)cs.onclick=()=>navigator.clipboard?.writeText(data.shopping.join("\n"));
 let cn=document.getElementById("copyNotes");if(cn)cn.onclick=()=>navigator.clipboard?.writeText(data.notes);
 }
+applyAesthetic();
 render();
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
