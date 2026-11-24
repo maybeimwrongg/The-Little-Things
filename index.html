@@ -98,6 +98,11 @@ input,textarea,select{background:var(--paper)}
 .daily-affirmation{margin:12px 0 18px;padding:10px 13px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 9px 9px 0}
 .daily-affirmation h3{margin:0;font-size:14px}
 .daily-affirmation p{margin:3px 0 0;font:italic 17px/1.4 Georgia,serif}
+.task-reminder{padding:0 0 10px;margin-bottom:8px}
+.task-reminder summary{cursor:pointer;color:var(--muted);font-size:14px;padding:8px 0}
+.task-reminder button{justify-self:start}
+.reminder-list{margin:0;padding-left:20px}
+.reminder-list li+li{margin-top:5px}
 </style>
 </head>
 <body>
@@ -203,7 +208,7 @@ function stats() {
  if (count) count.textContent = data.tasks.filter(task => task.done).length + " of " + data.tasks.length;
 }
 const planning = [
- ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"], ["Meals", "Meal planning"]
+ ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"], ["Meals", "Meal planning"], ["Occasions", "Birthdays & events"]
 ];
 const toolGroups = [
  ["Everyday", [["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
@@ -213,7 +218,7 @@ const toolGroups = [
  ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -403,7 +408,94 @@ function refreshDailyAffirmation(date = new Date()) {
  quote.textContent = dailyAffirmations[index];
 }
 
+const occasions = data.occasions ??= [];
+const occasionTypes = ["Birthday", "Anniversary", "Event"];
+const occasionLeads = [[0, "On the day"], [1, "One day before"], [7, "One week before"]];
+
+function occurrenceDate(occasion, year) {
+ const [savedYear, month, day] = occasion.date.split("-").map(Number);
+ const eventYear = occasion.yearly ? year : savedYear;
+ const lastDay = new Date(eventYear, month, 0).getDate();
+ return new Date(eventYear, month - 1, Math.min(day, lastDay));
+}
+
+function refreshDueReminders(now = new Date()) {
+ const region = document.getElementById("dueReminders");
+ if (!region) return;
+ const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+ const dueTasks = data.tasks.filter(task => !task.done && task.remindAt && new Date(task.remindAt) <= now);
+ const dueOccasions = occasions.flatMap(occasion => {
+  const date = occurrenceDate(occasion, today.getFullYear());
+  const next = occasion.yearly && date < today ? occurrenceDate(occasion, today.getFullYear() + 1) : date;
+  const from = new Date(next);
+  from.setDate(from.getDate() - occasion.lead);
+  return from <= today && next >= today
+   ? [occasion.name + " · " + next.toLocaleDateString(undefined, {month:"short", day:"numeric"})] : [];
+ });
+ const reminders = [...dueTasks.map(task => task.name), ...dueOccasions];
+ const content = reminders.length
+  ? panel("Reminders", '<ul class="reminder-list">' + reminders.map(text => '<li>' + esc(text) + '</li>').join("") + '</ul>')
+  : "";
+ if (region.innerHTML !== content) region.innerHTML = content;
+}
+
+function occasionPlanner() {
+ return '<h2>Birthdays & events</h2>' + panel("Add an occasion", `<form id="occasionForm">
+  <label for="occasionName">Name</label><input id="occasionName" name="name" maxlength="120" placeholder="e.g. Mom’s birthday" required>
+  <label for="occasionType">Type</label><select id="occasionType" name="type">${occasionTypes.map(type => `<option>${type}</option>`).join("")}</select>
+  <label for="occasionDate">Date</label><input id="occasionDate" name="date" type="date" required>
+  <label for="occasionRepeat">Repeats</label><select id="occasionRepeat" name="repeat"><option value="yearly">Yearly</option><option value="once">Just once</option></select>
+  <label for="occasionLead">Remind me</label><select id="occasionLead" name="lead">${occasionLeads.map(([days, label]) => `<option value="${days}">${label}</option>`).join("")}</select>
+  <button class="add">Save occasion</button></form>`)
+  + panel("Saved occasions", occasions.map(occasion => {
+   const date = occurrenceDate(occasion, new Date().getFullYear());
+   const dateLabel = date.toLocaleDateString(undefined, occasion.yearly ? {month:"long", day:"numeric"} : {year:"numeric", month:"long", day:"numeric"});
+   return `<div class="item"><div class="name"><strong>${esc(occasion.name)}</strong><div class="muted">${esc(occasion.type)} · ${esc(dateLabel)} · ${occasion.yearly ? "Yearly" : "Once"}</div></div>
+    <button class="delete" data-remove-occasion="${occasion.id}" aria-label="Remove ${esc(occasion.name)}">×</button></div>`;
+  }).join("") || '<p class="muted">No occasions yet.</p>');
+}
+
+function bindReminders() {
+ document.querySelectorAll("[data-task-reminder]").forEach(form => {
+  form.onsubmit = event => {
+   event.preventDefault();
+   const task = data.tasks.find(item => String(item.id) === form.dataset.taskReminder);
+   task.remindAt = form.elements.remindAt.value;
+   save();
+   render();
+  };
+  const clear = form.querySelector("[data-clear-reminder]");
+  if (clear) clear.onclick = () => {
+   form.elements.remindAt.value = "";
+   form.requestSubmit();
+  };
+ });
+ const form = document.getElementById("occasionForm");
+ if (!form) return;
+ form.elements.type.onchange = () => {
+  form.elements.repeat.value = form.elements.type.value === "Event" ? "once" : "yearly";
+ };
+ form.onsubmit = event => {
+  event.preventDefault();
+  const fields = new FormData(form);
+  const name = fields.get("name").trim();
+  if (!name) return;
+  occasions.push({id: Date.now(), name, date: fields.get("date"), type: fields.get("type"),
+   yearly: fields.get("repeat") === "yearly", lead: Number(fields.get("lead"))});
+  save();
+  render();
+ };
+ document.querySelectorAll("[data-remove-occasion]").forEach(button => button.onclick = () => {
+  const index = occasions.findIndex(occasion => String(occasion.id) === button.dataset.removeOccasion);
+  if (index < 0) return;
+  occasions.splice(index, 1);
+  save();
+  render();
+ });
+}
+
 function render(){nav();let v="";
+if (section === "Occasions") v = occasionPlanner();
 if (section === "Meals") v = mealPlanner();
 if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
 if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
@@ -421,6 +513,7 @@ if (section === "Home") {
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
  v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Mood">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
   + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p><aside class="daily-affirmation" aria-labelledby="dailyAffirmationTitle"><h3 id="dailyAffirmationTitle">Daily affirmation</h3><p id="dailyAffirmation"></p></aside>'
+  + '<div id="dueReminders"></div>'
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
   + panel("Upcoming plans", appointmentLink + upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
 }
@@ -456,7 +549,14 @@ if (section === "Tools") {
   + toolGroups.map(([name, links]) => panel(name, directoryRows(links, true))).join("")
   + '<p id="toolPinStatus" role="status" class="muted"></p>';
 }
-if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
+if (section === "Tasks") {
+ v = panel("My to-do list", addForm("Add a task…", "tasks") + data.tasks.map(task =>
+  checkList([task], "tasks") + (task.done ? "" : `<details class="task-reminder"><summary>${task.remindAt ? "Edit reminder" : "Remind me"}</summary>
+   <form data-task-reminder="${task.id}"><label for="remind-${task.id}">Reminder for ${esc(task.name)}</label>
+   <input id="remind-${task.id}" name="remindAt" type="datetime-local" value="${esc(task.remindAt || "")}">
+   <button class="add">Save reminder</button>${task.remindAt ? '<button type="button" class="secondary" data-clear-reminder>Clear reminder</button>' : ""}</form></details>`)
+ ).join(""));
+}
 if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
 
 if(section==="Appointments"){
@@ -499,7 +599,8 @@ if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan tod
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Meals") bindMealPlanner();
- if (section === "Home") refreshDailyAffirmation();
+ if (section === "Home") { refreshDailyAffirmation(); refreshDueReminders(); }
+ if (section === "Tasks" || section === "Occasions") bindReminders();
  document.querySelectorAll("[data-pin-tool]").forEach(button => {
   button.onclick = () => {
    const page = button.dataset.pinTool;
@@ -578,7 +679,7 @@ let cf=document.getElementById("circleForm");if(cf)cf.onsubmit=e=>{e.preventDefa
 document.querySelectorAll("[data-invite]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let c=data.circles.find(x=>x.id==f.dataset.invite);let member=new FormData(f).get("member").trim();if(c&&member){c.members.push(member);c.activity.push(member+" added to the circle");save();render()}});
 document.querySelectorAll("[data-circle-del]").forEach(b=>b.onclick=()=>{if(confirm("Remove this circle from this device?")){data.circles=data.circles.filter(c=>c.id!=b.dataset.circleDel);save();render()}});
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{section=b.dataset.go;render();window.scrollTo(0,0)});
-document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{let x=data[el.dataset.check].find(x=>x.id==el.dataset.id);if(x)x.done=el.checked;save();render()});
+document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{let x=data[el.dataset.check].find(x=>x.id==el.dataset.id);if(x){x.done=el.checked;if(x.done && el.dataset.check==="tasks") delete x.remindAt;}save();render()});
 document.querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>{data[el.dataset.del]=data[el.dataset.del].filter(x=>x.id!=el.dataset.id);save();render()});
 document.querySelectorAll("form[data-add]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let name=new FormData(f).get("name").trim();if(!name)return;let k=f.dataset.add;if(k==="shopping")data.shopping.push(name);else data[k].push({id:Date.now(),name,...(k==="events"?{day:document.getElementById("eventDay").value}:{done:false})});save();render()});
 document.querySelectorAll("[data-bill]").forEach(el=>el.onchange=()=>{let b=data.bills.find(x=>x.id==el.dataset.bill);b.paid=el.checked;save()});
@@ -602,9 +703,9 @@ let cn=document.getElementById("copyNotes");if(cn)cn.onclick=()=>navigator.clipb
 applyAesthetic();
 render();
 document.addEventListener("visibilitychange", () => {
- if (!document.hidden) refreshDailyAffirmation();
+ if (!document.hidden) { refreshDailyAffirmation(); refreshDueReminders(); }
 });
-setInterval(() => refreshDailyAffirmation(), 30000);
+setInterval(() => { refreshDailyAffirmation(); refreshDueReminders(); }, 30000);
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
 </body></html>
