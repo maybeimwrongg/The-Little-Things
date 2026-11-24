@@ -13,43 +13,43 @@
 <style>
 :root{--sage:#71836b;--dark:#394b38;--muted:#78836f;--cream:#f4f1e8;--paper:#fffefa;--line:#e3e2d8;--peach:#eee4d9}
 *{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--dark);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-header{padding:22px 18px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand small{letter-spacing:.12em;color:var(--muted);font-weight:700;font-size:10px}.brand h1{font-family:Georgia,serif;font-size:27px;margin:3px 0}.brand p{margin:0;color:var(--muted);font-size:12px}header img{width:66px;height:66px;border-radius:18px;object-fit:cover}
-main{max-width:720px;margin:auto;padding:0 14px 30px}.hero{background:#e2e7d9;border-radius:18px;padding:17px;margin-bottom:14px}.hero h2{margin:0 0 5px;font: bold 21px Georgia}.hero p{margin:0 0 13px;color:#687763;font-size:13px}.stats{display:flex;justify-content:space-between;gap:8px}.stat strong{display:block;font-size:22px}.stat span{font-size:11px;color:#687763}
-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0}.navbtn{border:0;border-radius:12px;background:var(--paper);padding:10px 3px;color:#61745a;font-size:11px;font-weight:650}.navbtn.active{background:var(--sage);color:white}.navbtn span{display:block;font-size:18px;margin-bottom:3px}
-.panel{background:var(--paper);border-radius:17px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #514b3510}.panel h2{font: bold 20px Georgia;margin:0 0 13px}.muted{color:var(--muted);font-size:12px}.row{display:flex;align-items:center;gap:9px}.row>*:first-child{flex:1}
+header{padding:22px 18px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand small{letter-spacing:.12em;color:var(--muted);font-weight:700;font-size:0.625rem}.brand h1{font-family:Georgia,serif;font-size:1.6875rem;margin:3px 0}.brand p{margin:0;color:var(--muted);font-size:0.75rem}header img{width:66px;height:66px;border-radius:18px;object-fit:cover}
+main{max-width:720px;margin:auto;padding:0 14px 30px}.hero{background:#e2e7d9;border-radius:18px;padding:17px;margin-bottom:14px}.hero h2{margin:0 0 5px;font: bold 1.3125rem Georgia}.hero p{margin:0 0 13px;color:#687763;font-size:0.8125rem}.stats{display:flex;justify-content:space-between;gap:8px}.stat strong{display:block;font-size:1.375rem}.stat span{font-size:0.6875rem;color:#687763}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0}.navbtn{border:0;border-radius:12px;background:var(--paper);padding:10px 3px;color:#61745a;font-size:0.6875rem;font-weight:650}.navbtn.active{background:var(--sage);color:white}.navbtn span{display:block;font-size:1.125rem;margin-bottom:3px}
+.panel{background:var(--paper);border-radius:17px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #514b3510}.panel h2{font: bold 1.25rem Georgia;margin:0 0 13px}.muted{color:var(--muted);font-size:0.75rem}.row{display:flex;align-items:center;gap:9px}.row>*:first-child{flex:1}
 input,textarea,select{font:inherit;border:1px solid var(--line);background:#fff;border-radius:10px;padding:11px;color:var(--dark);width:100%;min-width:0}textarea{min-height:150px;resize:vertical}
-button{font:inherit;cursor:pointer}.add{border:0;background:var(--sage);color:white;border-radius:10px;padding:11px 14px;font-weight:650}.secondary{border:0;background:#e7ebdf;color:var(--dark);border-radius:10px;padding:10px 12px;font-weight:650}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.item input[type=checkbox]{width:19px;height:19px;accent-color:var(--sage)}.item .name{flex:1;font-size:14px}.item.done .name{text-decoration:line-through;color:#969b8e}.delete{border:0;background:transparent;color:#9b8275;font-size:18px;padding:4px 7px}
+button{font:inherit;cursor:pointer}.add{border:0;background:var(--sage);color:white;border-radius:10px;padding:11px 14px;font-weight:650}.secondary{border:0;background:#e7ebdf;color:var(--dark);border-radius:10px;padding:10px 12px;font-weight:650}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.item input[type=checkbox]{width:19px;height:19px;accent-color:var(--sage)}.item .name{flex:1;font-size:0.875rem}.item.done .name{text-decoration:line-through;color:#969b8e}.delete{border:0;background:transparent;color:#9b8275;font-size:1.125rem;padding:4px 7px}
 .progress{height:8px;border-radius:20px;background:#dfe4d8;overflow:hidden;margin:8px 0}.progress i{display:block;height:100%;background:var(--sage);width:0}
-.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{background:#f0eee5;border-radius:13px;padding:13px}.mini b{display:block;margin-bottom:5px}.mini p{margin:0;color:var(--muted);font-size:12px}
-.day{border-top:1px solid var(--line);padding:11px 0}.day strong{display:block;margin-bottom:6px}.tag{display:inline-block;background:#e8ecdf;border-radius:20px;padding:5px 9px;font-size:12px;margin:3px}
-footer{text-align:center;color:var(--muted);font:italic 12px Georgia;padding:18px}
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{background:#f0eee5;border-radius:13px;padding:13px}.mini b{display:block;margin-bottom:5px}.mini p{margin:0;color:var(--muted);font-size:0.75rem}
+.day{border-top:1px solid var(--line);padding:11px 0}.day strong{display:block;margin-bottom:6px}.tag{display:inline-block;background:#e8ecdf;border-radius:20px;padding:5px 9px;font-size:0.75rem;margin:3px}
+footer{text-align:center;color:var(--muted);font:italic 0.75rem Georgia;padding:18px}
 @media(min-width:600px){nav{grid-template-columns:repeat(6,1fr)}}
 
 :root{--sage:#315747;--dark:#202b26;--muted:#586761;--cream:#f5f6f2;--paper:#fff;--line:#e0e7e0}
 main{max-width:760px;padding:4px 16px calc(105px + env(safe-area-inset-bottom))}
-#view>h2{font-size:32px;letter-spacing:-.045em;margin:18px 4px}
+#view>h2{font-size:2rem;letter-spacing:-.045em;margin:18px 4px}
 .panel{border:1px solid var(--line);border-radius:16px;box-shadow:none;margin:12px 0;padding:17px}
-.panel h2{font:600 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.02em}
-.muted,.tag{font-size:14px}.item .name{font-size:16px}.item{min-height:48px}
+.panel h2{font:600 1.0625rem -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.02em}
+.muted,.tag{font-size:0.875rem}.item .name{font-size:1rem}.item{min-height:48px}
 .tag{background:#edf2ec}.add,.secondary{min-height:44px}.secondary{background:#edf2ec}
 .delete{min-width:44px;min-height:44px;color:#805344}
-form:not(.row){display:grid;gap:9px}input,textarea,select{font-size:16px}
+form:not(.row){display:grid;gap:9px}input,textarea,select{font-size:1rem}
 nav#nav{position:fixed;z-index:2;inset:auto 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
-.navbtn,.section-link{font-size:13px;color:var(--dark);min-height:48px}.navbtn.active{background:#e7efe8;color:var(--sage)}
+.navbtn,.section-link{font-size:0.8125rem;color:var(--dark);min-height:48px}.navbtn.active{background:#e7efe8;color:var(--sage)}
 .section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.section-link{background:#f5f7f3;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px}
+.section-link{background:#f5f7f3;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:0.9375rem}
 .section-link span{display:inline-block;margin-right:8px;color:var(--sage)}
 .home-summary{background:var(--sage);color:#fff;border-radius:16px;padding:18px;margin-top:12px}
-.home-summary p{margin:0;font-size:15px}.home-summary strong{font-size:28px;display:block;margin-bottom:4px}
+.home-summary p{margin:0;font-size:0.9375rem}.home-summary strong{font-size:1.75rem;display:block;margin-bottom:4px}
 @media(min-width:760px){nav#nav{inset:auto calc((100% - 730px) / 2) 14px;border:1px solid var(--line);border-radius:16px}}
 
 :root,[data-aesthetic="diary"]{color-scheme:light;--sage:#664655;--dark:#382823;--muted:#6d5852;--cream:#faf7f4;--paper:#fffdfb;--line:#e8dcd6;--soft:#f4edf5;--selected:#e8daef;--sticker:#eaddf0;--accent:#ce9d9c}
 body{line-height:1.5}
 .app-header{max-width:760px;margin:auto;padding:18px 16px 16px;justify-content:center;text-align:center;border-bottom:1px solid var(--line)}
-.app-header h1{margin:0;font-family:"Snell Roundhand","Apple Chancery","Segoe Script","Brush Script MT",cursive;font-weight:600;font-size:clamp(34px,8vw,54px);line-height:1.2}
-#view>h2{font:normal clamp(32px, 7vw, 46px) Georgia,serif;letter-spacing:-.055em;margin:24px 3px 14px}
+.app-header h1{margin:0;font-family:"Snell Roundhand","Apple Chancery","Segoe Script","Brush Script MT",cursive;font-weight:600;font-size:clamp(2.125rem,8vw,3.375rem);line-height:1.2}
+#view>h2{font:normal clamp(2rem, 7vw, 2.875rem) Georgia,serif;letter-spacing:-.055em;margin:24px 3px 14px}
 .panel{padding:18px;border-radius:12px;margin:15px 0}
-.panel h2{font:normal 24px Georgia,serif}
+.panel h2{font:normal 1.5rem Georgia,serif}
 .navbtn,.secondary,.section-link{background:var(--soft)}
 .navbtn.active{background:var(--selected);color:var(--dark)}
 nav#nav{background:var(--paper)}
@@ -57,10 +57,10 @@ nav#nav[hidden]{display:none}
 .tag{background:var(--soft)}
 input,textarea,select{background:var(--paper)}
 .welcome-note{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:var(--sticker);border:1px solid var(--line);border-radius:12px;padding:17px 17px;margin:18px 0 0}
-.welcome-note p{margin:0;font:italic clamp(22px,5.7vw,30px) Georgia,serif;overflow-wrap:anywhere}
+.welcome-note p{margin:0;font:italic clamp(1.375rem,5.7vw,1.875rem) Georgia,serif;overflow-wrap:anywhere}
 .welcome-note p span{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:3px;text-underline-offset:5px}
-.welcome-note button{min-height:44px;border:0;background:transparent;text-decoration:underline;text-underline-offset:3px;color:var(--dark);font-size:14px}
-.task-summary{margin:0 3px 12px;color:var(--muted);font-size:15px}
+.welcome-note button{min-height:44px;border:0;background:transparent;text-decoration:underline;text-underline-offset:3px;color:var(--dark);font-size:0.875rem}
+.task-summary{margin:0 3px 12px;color:var(--muted);font-size:0.9375rem}
 
 [data-aesthetic="garden"]{color-scheme:light;--sage:#345641;--dark:#23382b;--muted:#4d6554;--cream:#f7f6eb;--paper:#fffef7;--line:#d9e2d2;--soft:#eef3e8;--selected:#dce9d8;--sticker:#e1ebda;--accent:#90a980}
 [data-aesthetic="cherry"]{color-scheme:light;--sage:#912741;--dark:#4b2630;--muted:#73505b;--cream:#fff6f2;--paper:#fffdf8;--line:#efdadb;--soft:#fae9eb;--selected:#f5d7df;--sticker:#fae3e8;--accent:#cf7990}
@@ -71,35 +71,35 @@ input,textarea,select{background:var(--paper)}
 .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
 .theme-choice{display:grid;gap:8px;padding:11px;text-align:left;border:2px solid var(--line);border-radius:12px;background:var(--cream);color:var(--dark)}
 .theme-choice[aria-pressed="true"]{border-color:var(--sage)}
-.theme-sticker{display:block;padding:7px;border-radius:7px;background:var(--sticker);font:italic 16px Georgia,serif}
-.theme-task{font-size:14px;color:var(--dark)}
-.theme-action{justify-self:start;background:var(--sage);color:#fff;border-radius:6px;padding:3px 7px;font-size:13px}
+.theme-sticker{display:block;padding:7px;border-radius:7px;background:var(--sticker);font:italic 1rem Georgia,serif}
+.theme-task{font-size:0.875rem;color:var(--dark)}
+.theme-action{justify-self:start;background:var(--sage);color:#fff;border-radius:6px;padding:3px 7px;font-size:0.8125rem}
 @media(max-width:360px){.theme-grid{grid-template-columns:1fr}}
 .welcome-identity{display:flex;align-items:center;gap:10px;min-width:0}
 .profile-avatar{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--paper);border:1px solid var(--line);object-fit:cover;color:var(--dark);font-weight:700}
 .profile-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .profile-options button[aria-pressed="true"]{outline:2px solid var(--sage);outline-offset:1px}
 .profile-actions{margin-top:14px}
-.welcome-note .welcome-mood{font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;grid-column:1/-1;text-align:left}
+.welcome-note .welcome-mood{font:600 0.875rem -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;grid-column:1/-1;text-align:left}
 .directory-row{display:flex;align-items:stretch;gap:8px;padding:5px 0}
 .directory-row+.directory-row{border-top:1px solid var(--line)}
 .directory-link{display:flex;align-items:center;gap:10px;flex:1;padding:8px;border:0;background:transparent;color:var(--dark);text-align:left;min-height:48px}
 .directory-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:9px;background:var(--soft)}
-.pin-tool{flex:none;width:48px;border:0;border-radius:9px;background:var(--soft);color:var(--dark);font-size:22px}
+.pin-tool{flex:none;width:48px;border:0;border-radius:9px;background:var(--soft);color:var(--dark);font-size:1.375rem}
 .pin-tool[aria-pressed="true"]{background:var(--selected)}
 .next-appointment{width:100%;margin-top:12px}
 .meal-week{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .meal-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:4px;margin:12px 0}
-.meal-days button{padding:4px;font-size:14px}
+.meal-days button{padding:4px;font-size:0.875rem}
 .meal-days button[aria-pressed="true"]{background:var(--sage);color:#fff}
 .meal-recipe{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px}
 .meal-recipe summary{cursor:pointer;font-weight:650}
 .meal-actions{display:flex;flex-wrap:wrap;gap:8px}
 .daily-affirmation{margin:12px 0 18px;padding:10px 13px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 9px 9px 0}
-.daily-affirmation h3{margin:0;font-size:14px}
-.daily-affirmation p{margin:3px 0 0;font:italic 17px/1.4 Georgia,serif}
+.daily-affirmation h3{margin:0;font-size:0.875rem}
+.daily-affirmation p{margin:3px 0 0;font:italic 1.0625rem/1.4 Georgia,serif}
 .task-reminder{padding:0 0 10px;margin-bottom:8px}
-.task-reminder summary{cursor:pointer;color:var(--muted);font-size:14px;padding:8px 0}
+.task-reminder summary{cursor:pointer;color:var(--muted);font-size:0.875rem;padding:8px 0}
 .task-reminder button{justify-self:start}
 .reminder-list{margin:0;padding-left:20px}
 .reminder-list li+li{margin-top:5px}
@@ -110,6 +110,26 @@ input,textarea,select{background:var(--paper)}
 .recipe-source-list{display:grid;gap:6px;margin:10px 0}
 .recipe-source-list a,.saved-recipe-link{color:var(--dark);display:block;padding:10px 0;text-underline-offset:3px;overflow-wrap:anywhere}
 .recipe-source-list .item{overflow-wrap:anywhere}
+
+:root{--title-font:"Snell Roundhand","Apple Chancery","Segoe Script","Brush Script MT",cursive;--planner-font:system-ui,sans-serif;--preview-size:16px}
+[data-title-font="serif"]{--title-font:Georgia,serif}
+[data-title-font="clean"]{--title-font:system-ui,sans-serif}
+[data-planner-font="rounded"]{--planner-font:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif}
+[data-planner-font="serif"]{--planner-font:Georgia,serif}
+[data-text-size="large"]{--preview-size:18px}
+[data-text-size="extra"]{--preview-size:20px}
+html[data-text-size="large"]{font-size:112.5%}
+html[data-text-size="extra"]{font-size:125%}
+body{font-family:var(--planner-font)}
+.app-header h1,.typography-preview strong{font-family:var(--title-font)}
+.welcome-note button.welcome-mood{font-family:var(--planner-font)}
+.typography-preview{margin:8px 0;padding:14px;border-radius:12px;background:var(--soft);font:var(--preview-size)/1.5 var(--planner-font)}
+.typography-preview strong{display:block;font-size:1.55em}
+.typography-preview p{margin:6px 0}
+.typography-preview .add{display:inline-block}
+.weather-summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:10px 0;padding:10px 12px;background:var(--soft);border-radius:10px}
+.weather-summary button{max-width:100%;overflow-wrap:anywhere}
+.weather-results button{display:block;text-align:left;width:100%;margin:6px 0}
 </style>
 </head>
 <body>
@@ -218,14 +238,14 @@ const planning = [
  ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"], ["Meals", "Meal planning"], ["Occasions", "Birthdays & events"]
 ];
 const toolGroups = [
- ["Everyday", [["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
+ ["Everyday", [["Weather", "Weather & outfits"], ["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
  ["Money", [["Money", "Bills & budget"], ["Wishlist", "Wishlist"]]],
  ["Wellness", [["Mood", "Mood"], ["Routines", "Daily routines"]]],
  ["Creative & personal", [["Projects", "Creative projects"], ["Notes", "Notes"]]],
  ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -634,7 +654,187 @@ function bindReminders() {
  });
 }
 
+const typographyOptions = {
+ titleFont: ["App title", [["cursive", "Cute cursive"], ["serif", "Elegant serif"], ["clean", "Clean lettering"]]],
+ plannerFont: ["Planner text", [["system", "System"], ["rounded", "Rounded"], ["serif", "Classic serif"]]],
+ textSize: ["Text size", [["standard", "Standard"], ["large", "Large"], ["extra", "Extra Large"]]]
+};
+const typographyKey = "littleThingsTypography";
+let typography = {};
+try { typography = JSON.parse(localStorage.getItem(typographyKey)) || {}; } catch {}
+for (const [key, [, choices]] of Object.entries(typographyOptions)) {
+ if (!choices.some(([value]) => value === typography[key])) typography[key] = choices[0][0];
+}
+
+function typographyPanel() {
+ return panel("Typography", `<form id="typographyForm">
+  ${Object.entries(typographyOptions).map(([key, [label, choices]]) => `<label for="type-${key}">${label}</label>
+   <select id="type-${key}" name="${key}">${choices.map(([value, name]) => `<option value="${value}" ${typography[key] === value ? "selected" : ""}>${name}</option>`).join("")}</select>`).join("")}
+  <div id="typographyPreview" class="typography-preview"><strong>The Little Things</strong><p>Welcome back</p><p>○ Pick up groceries</p><span class="add">Add task</span></div>
+  <button class="add">Save fonts</button><p id="typographyStatus" class="muted" role="status"></p></form>`);
+}
+
+function bindTypography() {
+ const form = document.getElementById("typographyForm");
+ if (!form) return;
+ const preview = document.getElementById("typographyPreview");
+ const values = () => Object.fromEntries(new FormData(form));
+ const refreshPreview = () => Object.assign(preview.dataset, values());
+ form.onchange = refreshPreview;
+ refreshPreview();
+ form.onsubmit = event => {
+  event.preventDefault();
+  const next = values();
+  const status = document.getElementById("typographyStatus");
+  try { localStorage.setItem(typographyKey, JSON.stringify(next)); }
+  catch { status.textContent = "Could not save fonts on this device."; return; }
+  typography = next;
+  Object.assign(document.documentElement.dataset, typography);
+  status.textContent = "Fonts saved.";
+ };
+}
+
+const weatherCityKey = "littleThingsWeatherCity";
+let weatherCity = null;
+try { weatherCity = JSON.parse(localStorage.getItem(weatherCityKey)); } catch {}
+let conditions = null;
+let weatherUpdated = 0;
+let weatherLoading = false;
+let weatherError = "";
+let weatherCityRevision = 0;
+
+function cityName(city) {
+ return [city.name, city.admin1, city.country].filter(Boolean).join(", ");
+}
+
+async function weatherJson(url) {
+ const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
+ if (!response.ok) throw new Error("Weather service unavailable");
+ return response.json();
+}
+
+function weatherDescription(code) {
+ if (code === 0) return "Clear";
+ if (code <= 3) return "Cloudy";
+ if (code <= 48) return "Fog";
+ if (code >= 95) return "Thunderstorms";
+ if ([71,73,75,77,85,86].includes(code)) return "Snow";
+ return "Rain or drizzle";
+}
+
+function outfitSuggestion({apparent_temperature: feels, weather_code: code, wind_speed_10m: wind}) {
+ const layers = feels >= 85 ? "Breathable top, shorts or a light skirt, and comfortable shoes."
+  : feels >= 72 ? "A light tee or blouse with shorts, a skirt, or airy pants."
+  : feels >= 60 ? "A tee with jeans or trousers and a light cardigan."
+  : feels >= 45 ? "A sweater, long pants, and a light jacket."
+  : "A warm coat over layers, long pants, and warm shoes.";
+ const extras = [];
+ if ([71,73,75,77,85,86].includes(code)) extras.push("Add warm, water-resistant boots.");
+ else if (code >= 51) extras.push("Bring a rain jacket and water-resistant shoes.");
+ else if (wind >= 18) extras.push("Consider a wind-resistant layer.");
+ return [layers, ...extras].join(" ");
+}
+
+function refreshWeatherUI() {
+ const summary = document.getElementById("weatherNow");
+ if (summary) summary.textContent = conditions
+  ? weatherDescription(conditions.weather_code) + " · " + Math.round(conditions.temperature_2m) + "°F"
+   + " · Feels like " + Math.round(conditions.apparent_temperature) + "°F"
+  : weatherError || (weatherCity ? "Loading weather…" : "Choose a city for weather");
+ const outfit = document.getElementById("weatherOutfit");
+ if (outfit) outfit.textContent = conditions ? outfitSuggestion(conditions) : "";
+ const clock = document.getElementById("dailyClock");
+ if (clock) {
+  const options = {weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit"};
+  if (weatherCity?.timezone) options.timeZone = weatherCity.timezone;
+  try { clock.textContent = new Date().toLocaleString(undefined, options); }
+  catch { delete options.timeZone; clock.textContent = new Date().toLocaleString(undefined, options); }
+ }
+}
+
+async function refreshWeather() {
+ refreshWeatherUI();
+ if (!weatherCity || weatherLoading || Date.now() - weatherUpdated < 600000) return;
+ weatherLoading = true;
+ const revision = weatherCityRevision;
+ const url = new URL("https://api.open-meteo.com/v1/forecast");
+ url.search = new URLSearchParams({latitude:weatherCity.latitude, longitude:weatherCity.longitude,
+  current:"temperature_2m,apparent_temperature,weather_code,wind_speed_10m", temperature_unit:"fahrenheit", wind_speed_unit:"mph"});
+ try {
+  const result = await weatherJson(url);
+  if (revision === weatherCityRevision) {
+   if (!["temperature_2m","apparent_temperature","weather_code","wind_speed_10m"].every(key => Number.isFinite(result.current?.[key]))) throw new Error("Incomplete forecast");
+   conditions = result.current;
+   weatherError = "";
+  }
+ } catch {
+  if (revision === weatherCityRevision) { conditions = null; weatherError = "Weather is unavailable right now."; }
+ } finally {
+  weatherLoading = false;
+  if (revision === weatherCityRevision) {
+   weatherUpdated = Date.now();
+   refreshWeatherUI();
+  } else if (weatherCity) refreshWeather();
+ }
+}
+
+function weatherPanel() {
+ return "<h2>Weather & outfits</h2>" + panel(weatherCity ? esc(cityName(weatherCity)) : "Choose a city",
+  '<p id="weatherNow" role="status"></p><p id="weatherOutfit"></p>'
+  + '<form id="weatherCityForm"><label for="weatherCityName">City</label><input id="weatherCityName" name="city" maxlength="100" placeholder="e.g. Tampa" required>'
+  + '<button class="add">Find city</button></form><div id="weatherCityResults" class="weather-results"></div>'
+  + '<p id="weatherCityStatus" role="status" class="muted"></p>'
+  + (weatherCity ? '<button class="secondary" id="removeWeatherCity">Remove city</button> ' : "")
+  + '<p class="muted"><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" style="color:inherit">Weather by Open-Meteo</a></p>');
+}
+
+function bindWeather() {
+ const form = document.getElementById("weatherCityForm");
+ if (!form) return;
+ const resultList = document.getElementById("weatherCityResults");
+ const status = document.getElementById("weatherCityStatus");
+ function changeCity(city) {
+  try {
+   if (city) localStorage.setItem(weatherCityKey, JSON.stringify(city));
+   else localStorage.removeItem(weatherCityKey);
+  } catch { status.textContent = "Could not save your city on this device."; return; }
+  weatherCity = city;
+  conditions = null;
+  weatherError = "";
+  weatherUpdated = 0;
+  weatherCityRevision++;
+  render();
+ }
+ const remove = document.getElementById("removeWeatherCity");
+ if (remove) remove.onclick = () => changeCity(null);
+ form.onsubmit = async event => {
+  event.preventDefault();
+  const name = form.elements.city.value.trim();
+  if (name.length < 2) { status.textContent = "Enter at least two letters."; return; }
+  const button = form.querySelector("button");
+  button.disabled = true;
+  resultList.innerHTML = "";
+  status.textContent = "Searching…";
+  const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
+  url.search = new URLSearchParams({name, count:"6", language:"en"});
+  try {
+   const {results = []} = await weatherJson(url);
+   if (!form.isConnected) return;
+   status.textContent = results.length ? "Select your city." : "No matching city found.";
+   results.forEach(city => {
+    const option = document.createElement("button");
+    option.className = "secondary";
+    option.textContent = cityName(city);
+    option.onclick = () => changeCity(city);
+    resultList.append(option);
+   });
+  } catch { status.textContent = "City search is unavailable right now."; }
+  finally { button.disabled = false; }
+ };
+}
+
 function render(){nav();let v="";
+if (section === "Weather") v = weatherPanel();
 if (section === "Occasions") v = occasionPlanner();
 if (section === "Meals") v = mealPlanner();
 if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
@@ -652,6 +852,7 @@ if (section === "Home") {
  const currentMood = moods.find(([id]) => id === mood);
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
  v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Mood">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
+  + '<div class="weather-summary"><strong id="dailyClock"></strong><button class="secondary" data-go="Weather"><span id="weatherNow"></span></button></div>'
   + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p><aside class="daily-affirmation" aria-labelledby="dailyAffirmationTitle"><h3 id="dailyAffirmationTitle">Daily affirmation</h3><p id="dailyAffirmation"></p></aside>'
   + '<div id="dueReminders"></div>'
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
@@ -662,7 +863,7 @@ if (section === "Appearance") {
   + '<div class="theme-grid">' + aesthetics.map(([id, name]) =>
    `<button class="theme-choice" data-aesthetic="${id}" data-set-aesthetic="${id}" aria-pressed="${aesthetic === id}"><strong>${name}</strong><span class="theme-sticker" aria-hidden="true">Welcome back</span><span class="theme-task" aria-hidden="true">○ Pick up groceries</span><span class="theme-action" aria-hidden="true">Add task</span></button>`
   ).join("") + '</div>'
-  + (choosingFirstTheme ? '<button class="secondary" data-set-aesthetic="diary">Skip for now</button>' : '');
+  + (choosingFirstTheme ? '<button class="secondary" data-set-aesthetic="diary">Skip for now</button>' : typographyPanel());
 }
 if (section === "Profile") {
  v = '<h2>' + (choosingFirstPicture ? 'Choose your profile picture' : 'Profile') + '</h2>'
@@ -739,6 +940,9 @@ if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan tod
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Meals") bindMealPlanner();
+ if (section === "Appearance") bindTypography();
+ if (section === "Weather") bindWeather();
+ if (section === "Home" || section === "Weather") refreshWeather();
  if (section === "Home") { refreshDailyAffirmation(); refreshDueReminders(); }
  if (section === "Tasks" || section === "Occasions") bindReminders();
  document.querySelectorAll("[data-pin-tool]").forEach(button => {
@@ -841,11 +1045,12 @@ let cs=document.getElementById("copyShop");if(cs)cs.onclick=()=>navigator.clipbo
 let cn=document.getElementById("copyNotes");if(cn)cn.onclick=()=>navigator.clipboard?.writeText(data.notes);
 }
 applyAesthetic();
+Object.assign(document.documentElement.dataset, typography);
 render();
 document.addEventListener("visibilitychange", () => {
  if (!document.hidden) { refreshDailyAffirmation(); refreshDueReminders(); }
 });
-setInterval(() => { refreshDailyAffirmation(); refreshDueReminders(); }, 30000);
+setInterval(() => { refreshDailyAffirmation(); refreshDueReminders(); if (section === "Home" || section === "Weather") refreshWeather(); }, 30000);
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
 </body></html>
