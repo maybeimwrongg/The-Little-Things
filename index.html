@@ -144,6 +144,7 @@ html[data-aesthetic="charcoal"] .delete{color:#f0aeba}
 html[data-aesthetic="charcoal"] .item.done .name{color:var(--muted)}
 .vehicle-fields{display:grid;gap:8px;min-width:0}
 .vehicle-fields legend{font-weight:700}
+.meal-ingredient-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(108px,40%);gap:8px;align-items:center;padding:4px 0}
 </style>
 </head>
 <body>
@@ -533,6 +534,20 @@ function bindRecipeSites(dinner) {
  if (remove) remove.onclick = () => setRecipeLink("");
 }
 
+const groceryCategories = ["Produce","Meat & seafood","Frozen","Dairy & eggs","Bakery","Pantry","Drinks","Water","Snacks","Body care","Hair products","Skincare","Household","Pet supplies","Pharmacy & health","Other"];
+const foodCategoryRules = [
+ ["Frozen", /\b(?:frozen|ice cream)\b/i],
+ ["Bakery", /\b(?:bread|buns?|baguette|pita|naan|tortillas?)\b/i],
+ ["Pantry", /\b(?:canned|can|jar|dried|breadcrumbs?|panko|broth|stock|sauces?|marinara|salsa|pesto|vinegar|flour|oil|cumin|paprika|powder|salt|pasta|rice|noodles|sugar|honey|nut butter)\b/i],
+ ["Dairy & eggs", /\b(?:milk|eggs?|cheese|parmesan|mozzarella|cheddar|provolone|yogurt|cream|butter|feta|ricotta)\b/i],
+ ["Meat & seafood", /\b(?:chicken|beef|pork|turkey|lamb|steak|salmon|shrimp|fish|tuna|bacon|sausage|cutlets?|cod)\b/i],
+ ["Produce", /\b(?:onions?|garlic|basil|parsley|cilantro|lettuce|spinach|tomato(?:es)?|peppers?|avocados?|lemons?|limes?|carrots?|celery|broccoli|potato(?:es)?|cucumbers?|mushrooms?|apples?|bananas?|berries|peas|ginger|zucchini|herbs)\b/i]
+];
+function foodCategory(name) {
+ const prior = data.groceries.find(item => item.category !== "Other" && mealNameKey(item.name) === mealNameKey(name));
+ return prior?.category || foodCategoryRules.find(([, rule]) => rule.test(name))?.[0] || "";
+}
+
 function bindMealPlanner() {
  const key = mealDateKey(mealDay);
  const dinner = mealPlan[key];
@@ -576,7 +591,12 @@ function bindMealPlanner() {
   }
   message.textContent = "";
   picker.innerHTML = `<form id="mealGroceryForm"><fieldset><legend>Which ingredients do you need?</legend>
-   ${options.map((item, index) => `<label class="ingredient-choice"><input type="checkbox" name="item" value="${index}" checked><span>${esc(item)}</span></label>`).join("")}
+    ${options.map((item, index) => {
+    const suggested = foodCategory(item);
+    const categories = [...new Set([...groceryCategories, ...data.groceries.map(row => row.category)])];
+    return `<div class="meal-ingredient-row"><label class="ingredient-choice"><input type="checkbox" name="item" value="${index}" checked><span>${esc(item)}</span></label>
+     <select name="category-${index}" aria-label="Category for ${esc(item)}"><option value="">Choose category</option>${categories.map(name => `<option ${name === suggested ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></div>`;
+   }).join("")}
    </fieldset><div class="meal-actions"><button class="add">Add selected to groceries</button><button type="button" class="secondary" id="cancelMealGroceries">Cancel</button></div>
    <p id="mealGroceryStatus" role="status"></p></form>`;
   const groceryForm = document.getElementById("mealGroceryForm");
@@ -588,14 +608,18 @@ function bindMealPlanner() {
   groceryForm.onsubmit = event => {
    event.preventDefault();
    const status = document.getElementById("mealGroceryStatus");
-   const checked = new FormData(groceryForm).getAll("item");
+   const fields = new FormData(groceryForm);
+   const checked = fields.getAll("item");
    if (!checked.length) { status.textContent = "Select at least one ingredient."; return; }
    const existing = new Set(data.groceries.filter(item => !item.done).map(item => mealNameKey(item.name)));
-   const additions = checked.map(index => options[Number(index)]).filter(item => !existing.has(mealNameKey(item)));
+   const additions = checked.map(index => ({name:options[Number(index)], category:fields.get("category-" + index)}))
+    .filter(item => !existing.has(mealNameKey(item.name)));
+   const missing = additions.find(item => !item.category);
+   if (missing) { status.textContent = "Choose a category for " + missing.name + "."; return; }
    const firstId = Math.max(Date.now(), ...data.groceries.map(item => Number(item.id) + 1 || 0));
    const before = data.groceries;
-   data.groceries = before.concat(additions.map((name, index) => ({
-    id: firstId + index, name, category:"Other", qty:"", brand:"", description:"", photo:"", done:false
+   data.groceries = before.concat(additions.map(({name, category}, index) => ({
+    id: firstId + index, name, category, qty:"", brand:"", description:"", photo:"", done:false
    })));
    try { save(); }
    catch { data.groceries = before; status.textContent = "Could not save groceries on this device."; return; }
@@ -1033,7 +1057,21 @@ if (section === "Weather") v = weatherPanel();
 if (section === "Occasions") v = occasionPlanner();
 if (section === "Meals") v = mealPlanner();
 if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
-if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
+if (section === "Circles") {
+ const myName = data.displayName?.trim();
+ v = '<h2>Circles</h2>' + panel("Your circles", `<p class="muted">Member names are saved on this device. Shared accounts and invites are still pending.</p>
+  ${myName ? "" : '<button class="secondary" id="editGreeting" type="button">Add your name</button>'}
+  <form class="row" id="circleForm"><input name="name" maxlength="80" aria-label="Circle name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)
+  + data.circles.map(circle => panel(esc(circle.name), `<h3>Members</h3>
+   ${circle.members.map((member, index) => {
+    const self = index === 0 && member === "You";
+    const name = self && myName ? myName : member;
+    return `<div class="item"><span class="profile-avatar" aria-hidden="true">${esc(Array.from(name)[0]?.toUpperCase() || "○")}</span><span class="name">${esc(name)}${self && myName ? ' <span class="muted">(you)</span>' : ""}</span>
+     ${self ? "" : `<button class="secondary" data-rename-member="${circle.id}" data-member-index="${index}" aria-label="Edit name for ${esc(name)}">Edit name</button>`}</div>`;
+   }).join("")}
+   <form class="row" data-invite="${circle.id}"><input name="member" maxlength="80" aria-label="Member name" placeholder="e.g. Dylan" required><button class="secondary">Add member</button></form>
+   <button class="delete" data-circle-del="${circle.id}">Remove circle</button>`)).join("");
+}
 if (section === "Home") {
  const upcoming = data.events.slice(0, 3).map(event => `<div class="item"><span class="name">${esc(event.name)}</span><span class="muted">${esc(event.day)}</span></div>`).join("") || '<p class="muted">No plans yet.</p>';
  const now = Date.now();
@@ -1125,7 +1163,7 @@ ${a.notes?`<p class="muted" style="white-space:pre-wrap">${esc(a.notes)}</p>`:""
 if(section==="Money"){let spent=data.expenses.reduce((a,x)=>a+x.amount,0);v=panel("Monthly overview",`<label class="muted">Monthly spending budget</label><input id="budget" type="number" value="${data.budget}"><div class="cardgrid"><div class="mini"><b>$${spent.toFixed(2)}</b><p>Expenses entered</p></div><div class="mini"><b>$${(Number(data.budget)-spent).toFixed(2)}</b><p>Budget remaining</p></div></div>`)+panel("Track an expense",`<form class="row" id="expenseForm"><input name="amount" type="number" min="0.01" step="0.01" placeholder="Amount $" required><button class="add">Add</button></form>`)+panel("Upcoming bills",data.bills.map(b=>`<div class="item"><input type="checkbox" data-bill="${b.id}" ${b.paid?"checked":""}><span class="name">${esc(b.name)} · $${Number(b.amount).toFixed(2)}</span></div>`).join(""))}
 if(section==="Pets"){let labels=["Morning feeding","Refresh water bowls","Check and clean litter","Playtime and attention"];v=panel("Daily pet care",`<p class="muted">A little care goes a long way 🐾</p>`+labels.map((x,i)=>`<div class="item"><input type="checkbox" data-pet="${i}" ${data.pets[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetPets">Reset daily checklist</button>`)}
 if(section==="Groceries"){
-const cats=[...new Set(["Produce","Meat & seafood","Frozen","Dairy & eggs","Bakery","Pantry","Drinks","Water","Snacks","Body care","Hair products","Skincare","Household","Pet supplies","Pharmacy & health","Other",...data.groceries.map(x=>x.category)])];
+const cats=[...new Set([...groceryCategories,...data.groceries.map(x=>x.category)])];
 v=panel("Grocery & essentials",`<p class="muted">${data.groceries.filter(x=>x.done).length} of ${data.groceries.length} purchased</p><form id="groceryForm"><input name="name" placeholder="Product name" required><input name="brand" placeholder="Brand"><input name="qty" placeholder="Quantity or size"><label>Category</label><select name="category">${cats.map(c=>`<option>${esc(c)}</option>`).join("")}</select><input name="custom" placeholder="Or enter a custom category"><textarea name="description" placeholder="Product description, scent, flavor, exact version…"></textarea><label>Product photo (optional)</label><input name="photo" type="file" accept="image/*"><button class="add" style="margin-top:8px">Add item</button></form>`)+panel("Shop by category",cats.map(c=>{let items=data.groceries.filter(x=>x.category===c);return `<details class="day" ${items.length?'open':''}><summary><strong>${esc(c)} (${items.filter(x=>!x.done).length})</strong></summary>${items.map(x=>`<div class="item"><input type="checkbox" data-check="groceries" data-id="${x.id}" ${x.done?"checked":""}><div class="name" style="flex:1;${x.done?'text-decoration:line-through':''}"><strong>${esc(x.name)}</strong><div class="muted">${esc([x.brand,x.qty].filter(Boolean).join(' · '))}</div><div class="muted">${esc(x.description||'')}</div>${x.photo&&/^data:image\/jpeg;base64,/.test(x.photo)?`<img src="${x.photo}" alt="Product reference" style="width:100px;height:100px;object-fit:contain;border-radius:8px">`:''}</div><button class="delete" data-del="groceries" data-id="${x.id}">×</button></div>`).join("")||'<p class="muted">No items yet</p>'}</details>`}).join(""))+`<button class="secondary" id="clearGroceries">Clear purchased items</button> <button class="secondary" id="copyGroceries">Copy remaining list</button>`;
 }
 if(section==="Wishlist"){
@@ -1228,6 +1266,15 @@ data.appointments=data.appointments.filter(a=>a.id!=el.dataset.appointmentDel);s
 
 let cf=document.getElementById("circleForm");if(cf)cf.onsubmit=e=>{e.preventDefault();let name=new FormData(cf).get("name").trim();if(name){data.circles.push({id:Date.now(),name,members:["You"],activity:["Circle created"]});save();render()}};
 document.querySelectorAll("[data-invite]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let c=data.circles.find(x=>x.id==f.dataset.invite);let member=new FormData(f).get("member").trim();if(c&&member){c.members.push(member);c.activity.push(member+" added to the circle");save();render()}});
+document.querySelectorAll("[data-rename-member]").forEach(button => button.onclick = () => {
+ const circle = data.circles.find(item => String(item.id) === button.dataset.renameMember);
+ const index = Number(button.dataset.memberIndex);
+ const name = window.prompt("Edit member name", circle.members[index])?.trim().slice(0, 80);
+ if (!name) return;
+ circle.members[index] = name;
+ save();
+ render();
+});
 document.querySelectorAll("[data-circle-del]").forEach(b=>b.onclick=()=>{if(confirm("Remove this circle from this device?")){data.circles=data.circles.filter(c=>c.id!=b.dataset.circleDel);save();render()}});
 document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{section=b.dataset.go;render();window.scrollTo(0,0)});
 document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{let x=data[el.dataset.check].find(x=>x.id==el.dataset.id);if(x){x.done=el.checked;if(x.done && el.dataset.check==="tasks") delete x.remindAt;}save();render()});
