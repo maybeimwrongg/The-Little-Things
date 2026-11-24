@@ -81,6 +81,13 @@ input,textarea,select{background:var(--paper)}
 .profile-options button[aria-pressed="true"]{outline:2px solid var(--sage);outline-offset:1px}
 .profile-actions{margin-top:14px}
 .welcome-note .welcome-mood{font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;grid-column:1/-1;text-align:left}
+.directory-row{display:flex;align-items:stretch;gap:8px;padding:5px 0}
+.directory-row+.directory-row{border-top:1px solid var(--line)}
+.directory-link{display:flex;align-items:center;gap:10px;flex:1;padding:8px;border:0;background:transparent;color:var(--dark);text-align:left;min-height:48px}
+.directory-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:9px;background:var(--soft)}
+.pin-tool{flex:none;width:48px;border:0;border-radius:9px;background:var(--soft);color:var(--dark);font-size:22px}
+.pin-tool[aria-pressed="true"]{background:var(--selected)}
+.next-appointment{width:100%;margin-top:12px}
 </style>
 </head>
 <body>
@@ -185,11 +192,38 @@ function stats() {
  const count = document.getElementById("taskStat");
  if (count) count.textContent = data.tasks.filter(task => task.done).length + " of " + data.tasks.length;
 }
+const planning = [
+ ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"]
+];
+const toolGroups = [
+ ["Everyday", [["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
+ ["Money", [["Money", "Bills & budget"], ["Wishlist", "Wishlist"]]],
+ ["Wellness", [["Mood", "Mood"], ["Routines", "Daily routines"]]],
+ ["Creative & personal", [["Projects", "Creative projects"], ["Notes", "Notes"]]],
+ ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"]]]
+];
+const toolLinks = toolGroups.flatMap(([, links]) => links);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"]]);
+const pinnedToolsKey = "littleThingsPinnedTools";
+let pinnedTools = [];
+try {
+ const savedPins = JSON.parse(localStorage.getItem(pinnedToolsKey) || "[]");
+ if (Array.isArray(savedPins)) pinnedTools = [...new Set(savedPins)].filter(id => toolLinks.some(([page]) => page === id));
+} catch {}
+
+function directoryRows(links, showPins = false) {
+ return links.map(([page, label]) => {
+  const pinned = pinnedTools.includes(page);
+  return `<div class="directory-row"><button class="directory-link" data-go="${page}"><span class="directory-icon" aria-hidden="true">${toolIcons.get(page)}</span>${label}</button>`
+   + (showPins ? `<button class="pin-tool" data-pin-tool="${page}" aria-label="${esc(label)} favorite" aria-pressed="${pinned}">${pinned ? "★" : "☆"}</button>` : "")
+   + "</div>";
+ }).join("");
+}
+
 function nav() {
- const primary = ["Home", "Calendar", "Tasks"];
- const tabs = sections.filter(([name]) => primary.includes(name));
- tabs.push(["More", "⋯"]);
- const active = primary.includes(section) ? section : "More";
+ const tabs = [["Home", "⌂"], ["Plan", "▦"], ["Circles", "◎"], ["Tools", "⋯"]];
+ const active = section === "Plan" || planning.some(([page]) => page === section)
+  ? "Plan" : ["Home", "Circles"].includes(section) ? section : "Tools";
  const navigation = document.getElementById("nav");
  navigation.hidden = choosingFirstTheme || choosingFirstPicture;
  navigation.innerHTML = tabs.map(([name, icon]) => `<button class="navbtn ${active === name ? "active" : ""}" data-section="${name}" ${active === name ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon}</span>${name}</button>`).join("");
@@ -200,16 +234,32 @@ function nav() {
 function checkList(items,kind){return items.map((x,i)=>`<div class="item ${x.done?"done":""}"><input type="checkbox" data-check="${kind}" data-id="${x.id}" ${x.done?"checked":""}><span class="name">${esc(x.name)}</span><button class="delete" data-del="${kind}" data-id="${x.id}">×</button></div>`).join("")}
 function addForm(placeholder,kind){return `<form class="row" data-add="${kind}"><input name="name" placeholder="${placeholder}" required><button class="add">Add</button></form>`}
 function panel(title,body){return `<section class="panel"><h2>${title}</h2>${body}</section>`}
+function moodPanel() {
+ return panel("Mood",
+   '<p class="muted">Your mood is saved on this device.</p><div class="profile-options">'
+   + moods.map(([id, icon, label]) => `<button class="secondary" data-mood="${id}" aria-pressed="${mood === id}"><span aria-hidden="true">${icon}</span> ${label}</button>`).join("")
+   + (mood ? '<button class="secondary" data-mood="">Clear mood</button>' : '')
+   + '</div><p id="moodError" role="status" class="muted"></p>');
+}
 function render(){nav();let v="";
+if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
 if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
 if (section === "Home") {
  const upcoming = data.events.slice(0, 3).map(event => `<div class="item"><span class="name">${esc(event.name)}</span><span class="muted">${esc(event.day)}</span></div>`).join("") || '<p class="muted">No plans yet.</p>';
+ const now = Date.now();
+ const nextAppointment = data.appointments
+  .map(appointment => ({appointment, time: new Date(appointment.date + "T" + (appointment.time || "23:59")).getTime()}))
+  .filter(entry => entry.time >= now)
+  .sort((a, b) => a.time - b.time)[0];
+ const appointmentLink = nextAppointment
+  ? `<button class="secondary next-appointment" data-go="Appointments">${esc(nextAppointment.appointment.name)} · ${esc(new Date(nextAppointment.time).toLocaleDateString(undefined, {month:"short", day:"numeric"}))}</button>`
+  : "";
  const currentMood = moods.find(([id]) => id === mood);
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
- v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Profile">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
+ v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Mood">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
   + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p>' 
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
-  + panel("Upcoming plans", upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
+  + panel("Upcoming plans", appointmentLink + upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
 }
 if (section === "Appearance") {
  v = '<h2>' + (choosingFirstTheme ? 'Pick your aesthetic' : 'Appearance') + '</h2>'
@@ -231,17 +281,17 @@ if (section === "Profile") {
    + (profilePicture ? '<button class="secondary" data-avatar="">Remove picture</button> ' : '')
    + (choosingFirstPicture ? '<button class="add" id="finishProfile">' + (profilePicture ? 'Continue' : 'Skip for now') + '</button>' : '')
    + '</div>')
-  + (choosingFirstPicture ? '' : panel("Mood",
-   '<p class="muted">Your mood is saved on this device.</p><div class="profile-options">'
-   + moods.map(([id, icon, label]) => `<button class="secondary" data-mood="${id}" aria-pressed="${mood === id}"><span aria-hidden="true">${icon}</span> ${label}</button>`).join("")
-   + (mood ? '<button class="secondary" data-mood="">Clear mood</button>' : '')
-   + '</div><p id="moodError" role="status" class="muted"></p>'));
+  + (choosingFirstPicture ? '' : moodPanel());
 }
-if (section === "More") {
- const links = sections.filter(([name]) => !["Home", "Calendar", "Tasks"].includes(name));
- v = '<h2>More</h2>' + panel("Your tools", '<div class="section-grid">'
-  + links.map(([name, icon]) => `<button class="section-link" data-go="${name}"><span aria-hidden="true">${icon}</span>${name}</button>`).join("")
-  + '<button class="section-link" data-go="Appearance">Appearance</button><button class="section-link" data-go="Profile">Profile</button></div>');
+if (section === "Plan") {
+ v = '<h2>Plan</h2>' + panel("Your schedule", directoryRows(planning));
+}
+if (section === "Tools") {
+ const favorites = pinnedTools.map(id => toolLinks.find(([page]) => page === id));
+ v = '<h2>Tools</h2>'
+  + (favorites.length ? panel("Favorites", directoryRows(favorites)) : '<p class="muted">Tap a star to pin a favorite.</p>')
+  + toolGroups.map(([name, links]) => panel(name, directoryRows(links, true))).join("")
+  + '<p id="toolPinStatus" role="status" class="muted"></p>';
 }
 if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
 if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
@@ -285,6 +335,17 @@ if(section==="Projects"){v=panel("Creative projects",data.projects.map(p=>`<div 
 if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan today's priorities","Evening reset"];v=panel("Daily routines",labels.map((x,i)=>`<div class="item"><input type="checkbox" data-routine="${i}" ${data.routines[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetRoutine">Reset checklist</button>`)}
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
+ document.querySelectorAll("[data-pin-tool]").forEach(button => {
+  button.onclick = () => {
+   const page = button.dataset.pinTool;
+   const next = pinnedTools.includes(page) ? pinnedTools.filter(id => id !== page) : [...pinnedTools, page];
+   try { localStorage.setItem(pinnedToolsKey, JSON.stringify(next)); }
+   catch { document.getElementById("toolPinStatus").textContent = "Could not save favorites on this device."; return; }
+   pinnedTools = next;
+   render();
+   document.querySelector('[data-pin-tool="' + page + '"]')?.focus();
+  };
+ });
  document.querySelectorAll("[data-set-aesthetic]").forEach(button => {
   button.onclick = () => chooseAesthetic(button.dataset.setAesthetic);
  });
@@ -351,7 +412,7 @@ data.appointments=data.appointments.filter(a=>a.id!=el.dataset.appointmentDel);s
 let cf=document.getElementById("circleForm");if(cf)cf.onsubmit=e=>{e.preventDefault();let name=new FormData(cf).get("name").trim();if(name){data.circles.push({id:Date.now(),name,members:["You"],activity:["Circle created"]});save();render()}};
 document.querySelectorAll("[data-invite]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let c=data.circles.find(x=>x.id==f.dataset.invite);let member=new FormData(f).get("member").trim();if(c&&member){c.members.push(member);c.activity.push(member+" added to the circle");save();render()}});
 document.querySelectorAll("[data-circle-del]").forEach(b=>b.onclick=()=>{if(confirm("Remove this circle from this device?")){data.circles=data.circles.filter(c=>c.id!=b.dataset.circleDel);save();render()}});
-document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{section=b.dataset.go;render()});
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{section=b.dataset.go;render();window.scrollTo(0,0)});
 document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{let x=data[el.dataset.check].find(x=>x.id==el.dataset.id);if(x)x.done=el.checked;save();render()});
 document.querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>{data[el.dataset.del]=data[el.dataset.del].filter(x=>x.id!=el.dataset.id);save();render()});
 document.querySelectorAll("form[data-add]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let name=new FormData(f).get("name").trim();if(!name)return;let k=f.dataset.add;if(k==="shopping")data.shopping.push(name);else data[k].push({id:Date.now(),name,...(k==="events"?{day:document.getElementById("eventDay").value}:{done:false})});save();render()});
