@@ -137,6 +137,13 @@ body{font-family:var(--planner-font)}
 .quick-tour{margin:0 0 18px}
 .quick-tour dt{font-weight:700}
 .quick-tour dd{margin:3px 0 12px;color:var(--muted)}
+[data-aesthetic="slate"]{color-scheme:light;--sage:#38516e;--dark:#233144;--muted:#4b6079;--cream:#f2f5f9;--paper:#fcfdff;--line:#d7dfeb;--soft:#e8edf5;--selected:#d7e2f0;--sticker:#dce6f4;--accent:#738dad}
+[data-aesthetic="trail"]{color-scheme:light;--sage:#464e39;--dark:#2d3525;--muted:#58634b;--cream:#f5f3ea;--paper:#fffdf6;--line:#dedfd1;--soft:#edeee2;--selected:#dce1cf;--sticker:#e4e8d8;--accent:#879475}
+[data-aesthetic="charcoal"]{color-scheme:dark;--sage:#715b49;--dark:#fff4e5;--muted:#d5c5b4;--cream:#202224;--paper:#2d3032;--line:#4c4f51;--soft:#373a3e;--selected:#4f4841;--sticker:#403a35;--accent:#d2a578}
+html[data-aesthetic="charcoal"] .delete{color:#f0aeba}
+html[data-aesthetic="charcoal"] .item.done .name{color:var(--muted)}
+.vehicle-fields{display:grid;gap:8px;min-width:0}
+.vehicle-fields legend{font-weight:700}
 </style>
 </head>
 <body>
@@ -157,8 +164,12 @@ const aesthetics = [
  ["diary", "Lavender Diary"],
  ["garden", "Sunday Garden"],
  ["cherry", "Cherry Gingham"],
- ["midnight", "Midnight Ink"]
+ ["midnight", "Midnight Ink"], ["slate", "Slate Blue"], ["trail", "Trail Olive"], ["charcoal", "Charcoal & Copper"]
 ];
+const suggestedSetupThemes = new Set(["slate", "trail", "charcoal"]);
+const setupThemeHintKey = "littleThingsSetupPalette";
+let suggestBoldThemes = false;
+try { suggestBoldThemes = localStorage.getItem(setupThemeHintKey) === "bold"; } catch {}
 const aestheticKey = "littleThingsAesthetic";
 let savedAesthetic;
 try { savedAesthetic = localStorage.getItem(aestheticKey); } catch {}
@@ -201,7 +212,9 @@ function welcomeSetup() {
   <form id="welcomeSetupForm">
    <label for="setupName">What should we call you?</label>
    <input id="setupName" name="name" maxlength="40" autocomplete="given-name" placeholder="First name or nickname" value="${esc(data.displayName || "")}">
-   <p class="muted">Your setup is saved on this device.</p>
+   <label for="setupGender">Gender (optional)</label>
+   <select id="setupGender" name="gender"><option value="">Prefer not to say</option><option value="female">Female</option><option value="male">Male</option><option value="nonbinary">Nonbinary</option><option value="another">Another identity</option></select>
+   <p class="muted">This only changes which themes appear first. Your setup stays on this device.</p>
    <div class="setup-actions"><button class="add">Let’s get started</button><button class="secondary" type="button" id="skipSetupName">Skip name</button></div>
    <p id="setupStatus" role="status" class="muted"></p>
   </form></section>`;
@@ -217,6 +230,8 @@ function bindWelcomeSetup() {
    try { save(); }
    catch { data.displayName = previous; document.getElementById("setupStatus").textContent = "Could not save your name. You can skip this step."; return; }
   }
+  suggestBoldThemes = form.elements.gender.value === "male";
+  try { localStorage.setItem(setupThemeHintKey, suggestBoldThemes ? "bold" : ""); } catch {}
   recordSetupStep("theme");
   choosingFirstTheme = true;
   section = "Appearance";
@@ -291,6 +306,7 @@ function chooseAesthetic(id) {
  try { localStorage.setItem(aestheticKey, id); } catch {}
  applyAesthetic();
  if (choosingFirstTheme) {
+  try { localStorage.removeItem(setupThemeHintKey); } catch {}
   recordSetupStep("picture");
   choosingFirstPicture = true;
   section = "Profile";
@@ -309,14 +325,14 @@ const planning = [
  ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"], ["Meals", "Meal planning"], ["Occasions", "Birthdays & events"]
 ];
 const toolGroups = [
- ["Everyday", [["Weather", "Weather & outfits"], ["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
+ ["Everyday", [["Weather", "Weather & outfits"], ["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"], ["Vehicle", "Car maintenance"]]],
  ["Money", [["Money", "Bills & budget"], ["Wishlist", "Wishlist"]]],
  ["Wellness", [["Mood", "Mood"], ["Routines", "Daily routines"]]],
  ["Creative & personal", [["Projects", "Creative projects"], ["Notes", "Notes"]]],
  ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"], ["Quick tour", "Quick tour"], ["Feedback", "Feedback"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"], ["Quick tour", "?" ], ["Feedback", "✎"]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"], ["Quick tour", "?" ], ["Feedback", "✎"], ["Vehicle", "🚗"]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -955,7 +971,61 @@ function bindFeedback() {
  };
 }
 
+const vehicleServices = [
+ ["oil", "Oil change", "Miles at last oil change"],
+ ["tires", "Tire inspection", "Miles at last tire inspection or installation"]
+];
+
+function vehicleMaintenance() {
+ const vehicle = data.vehicleMaintenance || {};
+ const formatMiles = value => Number(value).toLocaleString();
+ const estimates = vehicleServices.map(([key, label]) => {
+  const service = vehicle[key];
+  if (service?.last == null || service?.interval == null || vehicle.odometer == null) return "";
+  const due = service.last + service.interval;
+  const remaining = due - vehicle.odometer;
+  const message = remaining > 0 ? formatMiles(remaining) + " miles to go"
+   : remaining < 0 ? formatMiles(-remaining) + " miles past your target" : "Due now";
+  return `<div class="item"><div class="name"><strong>${label}</strong><div class="muted">Target ${formatMiles(due)} mi · ${message}</div></div></div>`;
+ }).join("");
+ return "<h2>Car maintenance</h2>" + panel("Mileage tracker", estimates
+  + '<p class="muted">Enter service intervals from your owner’s manual or mechanic. For tires, mileage is a reminder to inspect them. Replacement also depends on tread, age, and condition.</p>'
+  + `<form id="vehicleForm"><label for="vehicleName">Vehicle name (optional)</label>
+   <input id="vehicleName" name="vehicleName" maxlength="80" value="${esc(vehicle.name || "")}" placeholder="e.g. Tucson">
+   <label for="vehicleMiles">Current odometer (miles)</label><input id="vehicleMiles" name="odometer" type="number" min="0" max="9999999" required value="${vehicle.odometer ?? ""}">
+   ${vehicleServices.map(([key, label, lastLabel]) => `<fieldset class="vehicle-fields"><legend>${label}</legend>
+    <label for="last-${key}">${lastLabel}</label><input id="last-${key}" name="${key}Last" type="number" min="0" max="9999999" value="${vehicle[key]?.last ?? ""}">
+    <label for="interval-${key}">Interval in miles</label><input id="interval-${key}" name="${key}Interval" type="number" min="1" max="9999999" value="${vehicle[key]?.interval ?? ""}"></fieldset>`).join("")}
+   <button class="add">Save mileage</button><p id="vehicleStatus" class="muted" role="status"></p></form>`);
+}
+
+function bindVehicleMaintenance() {
+ const form = document.getElementById("vehicleForm");
+ form.onsubmit = event => {
+  event.preventDefault();
+  const fields = new FormData(form);
+  const odometer = Number(fields.get("odometer"));
+  const next = {name:fields.get("vehicleName").trim(), odometer};
+  const status = document.getElementById("vehicleStatus");
+  for (const [key, label] of vehicleServices) {
+   const last = fields.get(key + "Last");
+   const interval = fields.get(key + "Interval");
+   if (!last && !interval) continue;
+   if (!last || !interval) { status.textContent = "Enter both values for " + label.toLowerCase() + "."; return; }
+   if (Number(last) > odometer) { status.textContent = "Last service mileage can’t be above the current odometer."; return; }
+   next[key] = {last:Number(last), interval:Number(interval)};
+  }
+  const previous = data.vehicleMaintenance;
+  data.vehicleMaintenance = next;
+  try { save(); }
+  catch { data.vehicleMaintenance = previous; status.textContent = "Could not save mileage on this device."; return; }
+  render();
+  document.getElementById("vehicleStatus").textContent = "Mileage saved.";
+ };
+}
+
 function render(){nav();let v="";
+if (section === "Vehicle") v = vehicleMaintenance();
 if (section === "Feedback") v = feedbackPanel();
 if (section === "Welcome setup") v = welcomeSetup();
 if (section === "Quick tour") v = quickTour();
@@ -984,8 +1054,12 @@ if (section === "Home") {
   + panel("Upcoming plans", appointmentLink + upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
 }
 if (section === "Appearance") {
+ const choices = choosingFirstTheme && suggestBoldThemes
+  ? [...aesthetics.filter(([id]) => suggestedSetupThemes.has(id)), ...aesthetics.filter(([id]) => !suggestedSetupThemes.has(id))]
+  : aesthetics;
  v = '<h2>' + (choosingFirstTheme ? 'Pick your aesthetic' : 'Appearance') + '</h2>'
-  + '<div class="theme-grid">' + aesthetics.map(([id, name]) =>
+  + (choosingFirstTheme && suggestBoldThemes ? '<p class="muted">Slate, olive, and charcoal are suggested first. Pick any theme you like.</p>' : '')
+  + '<div class="theme-grid">' + choices.map(([id, name]) =>
    `<button class="theme-choice" data-aesthetic="${id}" data-set-aesthetic="${id}" aria-pressed="${aesthetic === id}"><strong>${name}</strong><span class="theme-sticker" aria-hidden="true">Welcome back</span><span class="theme-task" aria-hidden="true">○ Pick up groceries</span><span class="theme-action" aria-hidden="true">Add task</span></button>`
   ).join("") + '</div>'
   + (choosingFirstTheme ? '<button class="secondary" data-set-aesthetic="diary">Skip for now</button>' : typographyPanel());
@@ -1068,6 +1142,7 @@ document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Appearance") bindTypography();
  if (section === "Welcome setup") bindWelcomeSetup();
  if (section === "Feedback") bindFeedback();
+ if (section === "Vehicle") bindVehicleMaintenance();
  if (section === "Quick tour") {
   document.getElementById("finishTour").onclick = finishQuickTour;
   const skip = document.getElementById("skipTour");
