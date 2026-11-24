@@ -107,6 +107,9 @@ input,textarea,select{background:var(--paper)}
 .ingredient-choice input{width:20px;height:20px;flex:none;accent-color:var(--sage)}
 .ingredient-choice span{overflow-wrap:anywhere}
 :focus-visible{outline:2px solid var(--sage);outline-offset:3px}
+.recipe-source-list{display:grid;gap:6px;margin:10px 0}
+.recipe-source-list a,.saved-recipe-link{color:var(--dark);display:block;padding:10px 0;text-underline-offset:3px;overflow-wrap:anywhere}
+.recipe-source-list .item{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -287,6 +290,46 @@ const recipesFor = name => dinnerRecipes.find(group => [group.name, ...group.ali
 const dinnerHistoryKey = name => "dinner:" + mealNameKey(recipesFor(name)?.name || name);
 const mealPlan = data.mealPlan ??= {};
 const dinnerHistory = data.dinnerHistory ??= {};
+const recipeLinks = data.recipeLinks ??= {};
+const favoriteRecipeSites = data.favoriteRecipeSites ??= [];
+
+function recipeWebUrl(input, allowBareHost = false) {
+ const value = input.trim();
+ if (!value || /[\u0000-\u0020\u007f]/.test(value)) return null;
+ try {
+  const url = new URL(allowBareHost && !value.includes("://") ? "https://" + value : value);
+  const ordinaryDomain = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*$/i.test(url.hostname);
+  if (!["https:", "http:"].includes(url.protocol) || !ordinaryDomain || url.username || url.password || url.port) return null;
+  return url;
+ } catch { return null; }
+}
+
+function favoriteRecipePanel() {
+ return panel("Favorite recipe sites", `<form id="favoriteRecipeForm">
+  <label for="favoriteRecipeHost">Website</label><input id="favoriteRecipeHost" name="site" maxlength="250" placeholder="e.g. allrecipes.com" required>
+  <button class="add">Add favorite site</button></form>
+  <div class="recipe-source-list">${favoriteRecipeSites.map((site, index) => `<div class="item"><span class="name">${esc(site)}</span>
+   <button type="button" class="delete" data-remove-recipe-site="${index}" aria-label="Remove ${esc(site)}">×</button></div>`).join("")}</div>
+  <p id="favoriteRecipeMessage" class="muted" role="status"></p>`);
+}
+
+function mealRecipeLinks(dinner) {
+ const saved = recipeWebUrl(recipeLinks[dinnerHistoryKey(dinner.name)] || "");
+ const searches = favoriteRecipeSites.map(site => {
+  const search = new URL("https://www.google.com/search");
+  search.searchParams.set("q", "site:" + site + " " + dinner.name + " recipe");
+  return `<a href="${esc(search.href)}" target="_blank" rel="noopener noreferrer">Search ${esc(site)} for ${esc(dinner.name)}</a>`;
+ }).join("");
+ return `<h3>Recipes from the web</h3>
+  ${saved ? `<a class="saved-recipe-link" href="${esc(saved.href)}" target="_blank" rel="noopener noreferrer">Open saved recipe · ${esc(saved.hostname)}</a>` : ""}
+  ${searches ? '<div class="recipe-source-list">' + searches + '</div>' : ""}
+  <form id="saveRecipeLink"><label for="recipeLink">Recipe link</label>
+   <input id="recipeLink" type="url" maxlength="2000" placeholder="https://…" value="${esc(saved?.href || "")}" required>
+   <div class="meal-actions"><button class="secondary">Save recipe link</button>
+   ${saved ? '<button type="button" class="secondary" id="removeRecipeLink">Remove recipe link</button>' : ""}</div>
+   <p id="recipeLinkMessage" class="muted" role="status"></p></form>`;
+}
+
 let mealDay = new Date();
 mealDay.setHours(12, 0, 0, 0);
 
@@ -331,12 +374,62 @@ function mealPlanner() {
     + `<form id="cookedDinner"><label for="dinnerIngredients">Ingredients you used</label>
      <textarea id="dinnerIngredients" maxlength="4000" placeholder="One ingredient per line" required>${esc((dinner.ingredients || []).join("\n"))}</textarea>
      <div class="meal-actions"><button type="button" class="secondary" id="shopDinnerIngredients">Send to groceries</button><button class="add">Mark cooked</button><button type="button" class="secondary" id="removeDinner">Remove dinner</button></div>
-     <p id="mealMessage" role="status" class="muted">${dinner.cooked ? "Cooked · ingredients saved" : ""}</p></form><div id="mealGroceryPicker"></div>`) : "");
+     <p id="mealMessage" role="status" class="muted">${dinner.cooked ? "Cooked · ingredients saved" : ""}</p></form><div id="mealGroceryPicker"></div>` + mealRecipeLinks(dinner)) : "")
+  + favoriteRecipePanel();
+}
+
+function bindRecipeSites(dinner) {
+ const favoritesForm = document.getElementById("favoriteRecipeForm");
+ favoritesForm.onsubmit = event => {
+  event.preventDefault();
+  const message = document.getElementById("favoriteRecipeMessage");
+  const url = recipeWebUrl(favoritesForm.elements.site.value, true);
+  if (!url) { message.textContent = "Enter a website such as allrecipes.com."; return; }
+  const site = url.hostname.replace(/^www\./, "");
+  if (favoriteRecipeSites.includes(site)) { message.textContent = "That site is already a favorite."; return; }
+  favoriteRecipeSites.push(site);
+  try { save(); } catch { favoriteRecipeSites.pop(); message.textContent = "Could not save the site on this device."; return; }
+  render();
+ };
+ document.querySelectorAll("[data-remove-recipe-site]").forEach(button => button.onclick = () => {
+  const index = Number(button.dataset.removeRecipeSite);
+  const [site] = favoriteRecipeSites.splice(index, 1);
+  try { save(); } catch {
+   favoriteRecipeSites.splice(index, 0, site);
+   document.getElementById("favoriteRecipeMessage").textContent = "Could not remove the site on this device.";
+   return;
+  }
+  render();
+ });
+ if (!dinner) return;
+ const key = dinnerHistoryKey(dinner.name);
+ const setRecipeLink = link => {
+  const previous = recipeLinks[key];
+  if (link) recipeLinks[key] = link;
+  else delete recipeLinks[key];
+  try { save(); } catch {
+   if (previous) recipeLinks[key] = previous;
+   else delete recipeLinks[key];
+   document.getElementById("recipeLinkMessage").textContent = "Could not save your recipe preference on this device.";
+   return;
+  }
+  render();
+  document.getElementById("recipeLinkMessage").textContent = link ? "Recipe saved for this dish." : "Recipe link removed.";
+ };
+ document.getElementById("saveRecipeLink").onsubmit = event => {
+  event.preventDefault();
+  const url = recipeWebUrl(document.getElementById("recipeLink").value);
+  if (!url) { document.getElementById("recipeLinkMessage").textContent = "Enter a full HTTP or HTTPS recipe link."; return; }
+  setRecipeLink(url.href);
+ };
+ const remove = document.getElementById("removeRecipeLink");
+ if (remove) remove.onclick = () => setRecipeLink("");
 }
 
 function bindMealPlanner() {
  const key = mealDateKey(mealDay);
  const dinner = mealPlan[key];
+ bindRecipeSites(dinner);
  const form = document.getElementById("dinnerForm");
  form.onsubmit = event => {
   event.preventDefault();
