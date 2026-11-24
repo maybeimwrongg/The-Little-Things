@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#71836b">
+<meta name="theme-color" content="#315747">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Little Things">
@@ -24,14 +24,33 @@ button{font:inherit;cursor:pointer}.add{border:0;background:var(--sage);color:wh
 .day{border-top:1px solid var(--line);padding:11px 0}.day strong{display:block;margin-bottom:6px}.tag{display:inline-block;background:#e8ecdf;border-radius:20px;padding:5px 9px;font-size:12px;margin:3px}
 footer{text-align:center;color:var(--muted);font:italic 12px Georgia;padding:18px}
 @media(min-width:600px){nav{grid-template-columns:repeat(6,1fr)}}
+
+:root{--sage:#315747;--dark:#202b26;--muted:#586761;--cream:#f5f6f2;--paper:#fff;--line:#e0e7e0}
+.app-header{max-width:760px;margin:auto;padding:24px 20px 12px;justify-content:flex-start;gap:12px}
+.app-header img{width:44px;height:44px;border-radius:12px}
+.brand h1{font-size:25px;font-weight:500;letter-spacing:-.035em;margin:0}
+main{max-width:760px;padding:4px 16px calc(105px + env(safe-area-inset-bottom))}
+#view>h2{font-size:32px;letter-spacing:-.045em;margin:18px 4px}
+.panel{border:1px solid var(--line);border-radius:16px;box-shadow:none;margin:12px 0;padding:17px}
+.panel h2{font:600 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.02em}
+.muted,.tag{font-size:14px}.item .name{font-size:16px}.item{min-height:48px}
+.tag{background:#edf2ec}.add,.secondary{min-height:44px}.secondary{background:#edf2ec}
+.delete{min-width:44px;min-height:44px;color:#805344}
+form:not(.row){display:grid;gap:9px}input,textarea,select{font-size:16px}
+nav#nav{position:fixed;z-index:2;inset:auto 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0;padding:7px 10px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
+.navbtn,.section-link{font-size:13px;color:var(--dark);min-height:48px}.navbtn.active{background:#e7efe8;color:var(--sage)}
+.section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.section-link{background:#f5f7f3;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px}
+.section-link span{display:inline-block;margin-right:8px;color:var(--sage)}
+.home-summary{background:var(--sage);color:#fff;border-radius:16px;padding:18px;margin-top:12px}
+.home-summary p{margin:0;font-size:15px}.home-summary strong{font-size:28px;display:block;margin-bottom:4px}
+@media(min-width:760px){nav#nav{inset:auto calc((100% - 730px) / 2) 14px;border:1px solid var(--line);border-radius:16px}}
 </style>
 </head>
 <body>
-<header><div class="brand"><small>YOUR PERSONAL SPACE</small><h1>The Little Things</h1><p>A calmer way to organize life 🌿</p></div><img src="icon-192.png" alt="The Little Things app icon"></header>
-<main>
-<section class="hero"><h2>Welcome home 🌿</h2><p>One little step at a time.</p><div class="stats"><div class="stat"><strong id="taskStat">0/0</strong><span>Tasks done</span></div><div class="stat"><strong id="billStat">0</strong><span>Bills unpaid</span></div><div class="stat"><strong id="shopStat">0</strong><span>Shopping items</span></div></div></section>
-<nav id="nav"></nav><div id="view"></div><footer>Little by little, a little becomes a lot.</footer>
-</main>
+<header class="app-header"><img src="icon-192.png" alt=""><div class="brand"><h1>The Little Things</h1></div></header>
+<main><div id="view"></div></main>
+<nav id="nav" aria-label="Main navigation"></nav>
 <script>
 const sections=[["Home","⌂"],["Calendar","▦"],["Tasks","☷"],["Money","$"],["Pets","🐾"],["Shopping","🛒"],["Groceries","🥕"],["Wishlist","♡"],["Projects","✂"],["Routines","☀"],["Notes","✎"],["Appointments","🗓"],["Circles","◎"]];
 const defaults={tasks:[{id:1,name:"Review weekly schedule",done:false},{id:2,name:"Laundry",done:false},{id:3,name:"Work on crochet project",done:false},{id:4,name:"Pet care",done:true}],events:[{id:1,name:"Weekly reset",day:"Monday"},{id:2,name:"Laundry",day:"Wednesday"},{id:3,name:"Plan next week",day:"Sunday"}],appointments:[],groceries:[],wishlist:[],bills:[{id:1,name:"Rent",amount:800,paid:false},{id:2,name:"Car payment",amount:300,paid:false},{id:3,name:"Internet",amount:60,paid:false}],budget:2000,expenses:[],pets:[false,false,false,false],shopping:["Milk","Eggs","Cat food","Laundry detergent"],projects:[{id:1,name:"Omega sweater",progress:45},{id:2,name:"Baby blanket",progress:70},{id:3,name:"Craft project",progress:10}],routines:[false,false,false,false],notes:"",
@@ -45,14 +64,38 @@ let data;try{data={...defaults,...JSON.parse(localStorage.getItem("littleThingsD
 let section="Home";
 function save(){localStorage.setItem("littleThingsData",JSON.stringify(data));stats()}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function stats(){let done=data.tasks.filter(x=>x.done).length;document.getElementById("taskStat").textContent=`${done}/${data.tasks.length}`;document.getElementById("billStat").textContent=data.bills.filter(x=>!x.paid).length;document.getElementById("shopStat").textContent=data.shopping.length}
-function nav(){document.getElementById("nav").innerHTML=sections.map(([n,ic])=>`<button class="navbtn ${section===n?"active":""}" data-section="${n}"><span>${ic}</span>${n}</button>`).join("");document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{section=b.dataset.section;render()})}
+function stats() {
+ const count = document.getElementById("taskStat");
+ if (count) count.textContent = data.tasks.filter(task => task.done).length + " of " + data.tasks.length;
+}
+function nav() {
+ const primary = ["Home", "Calendar", "Tasks"];
+ const tabs = sections.filter(([name]) => primary.includes(name));
+ tabs.push(["More", "⋯"]);
+ const active = primary.includes(section) ? section : "More";
+ const navigation = document.getElementById("nav");
+ navigation.innerHTML = tabs.map(([name, icon]) => `<button class="navbtn ${active === name ? "active" : ""}" data-section="${name}" ${active === name ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon}</span>${name}</button>`).join("");
+ navigation.querySelectorAll("[data-section]").forEach(button => {
+  button.onclick = () => { section = button.dataset.section; render(); window.scrollTo(0, 0); };
+ });
+}
 function checkList(items,kind){return items.map((x,i)=>`<div class="item ${x.done?"done":""}"><input type="checkbox" data-check="${kind}" data-id="${x.id}" ${x.done?"checked":""}><span class="name">${esc(x.name)}</span><button class="delete" data-del="${kind}" data-id="${x.id}">×</button></div>`).join("")}
 function addForm(placeholder,kind){return `<form class="row" data-add="${kind}"><input name="name" placeholder="${placeholder}" required><button class="add">Add</button></form>`}
 function panel(title,body){return `<section class="panel"><h2>${title}</h2>${body}</section>`}
 function render(){nav();let v="";
 if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
-if(section==="Home"){let upcoming=data.events.slice(0,4).map(e=>`<span class="tag">${esc(e.day)} · ${esc(e.name)}</span>`).join("")||'<p class="muted">No events added yet.</p>';v=panel("Today's priorities",checkList(data.tasks.slice(0,5),"tasks")+`<button class="secondary" data-go="Tasks">Manage tasks</button>`)+panel("Coming up",upcoming)+`<div class="cardgrid"><div class="mini"><b>Home & pets</b><p>Keep household care on track.</p></div><div class="mini"><b>Creative time</b><p>Make room for the things you love.</p></div></div>`}
+if (section === "Home") {
+ const upcoming = data.events.slice(0, 3).map(event => `<div class="item"><span class="name">${esc(event.name)}</span><span class="muted">${esc(event.day)}</span></div>`).join("") || '<p class="muted">No plans yet.</p>';
+ v = '<h2>Today</h2><section class="home-summary"><strong id="taskStat"></strong><p>Tasks complete</p></section>'
+  + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
+  + panel("Upcoming plans", upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
+}
+if (section === "More") {
+ const links = sections.filter(([name]) => !["Home", "Calendar", "Tasks"].includes(name));
+ v = '<h2>More</h2>' + panel("Your tools", '<div class="section-grid">'
+  + links.map(([name, icon]) => `<button class="section-link" data-go="${name}"><span aria-hidden="true">${icon}</span>${name}</button>`).join("")
+  + '</div>');
+}
 if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
 if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
 
