@@ -95,6 +95,9 @@ input,textarea,select{background:var(--paper)}
 .meal-recipe{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px}
 .meal-recipe summary{cursor:pointer;font-weight:650}
 .meal-actions{display:flex;flex-wrap:wrap;gap:8px}
+.daily-affirmation{margin:12px 0 18px;padding:10px 13px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 9px 9px 0}
+.daily-affirmation h3{margin:0;font-size:14px}
+.daily-affirmation p{margin:3px 0 0;font:italic 17px/1.4 Georgia,serif}
 </style>
 </head>
 <body>
@@ -369,6 +372,37 @@ function bindMealPlanner() {
  };
 }
 
+const dailyAffirmations = [
+ "I can take today one step at a time.",
+ "My needs are worth listening to.",
+ "I can change my mind when I learn something new.",
+ "I can ask for help before I feel overwhelmed.",
+ "I can make room for something I enjoy.",
+ "Small efforts count, even when nobody sees them.",
+ "I can be kind to myself on a hard day.",
+ "My pace can change with what I need today.",
+ "I can set a boundary and still care about someone.",
+ "I can notice what went well today.",
+ "I can do one thing now and come back to the rest later.",
+ "I can be proud of how far I’ve come.",
+ "I’m allowed to make time for rest.",
+ "I can begin again whenever I need to.",
+ "I can enjoy the little things as they happen.",
+ "I can trust myself to take the next step.",
+ "I can leave room in my day for the unexpected.",
+ "I can give myself the patience I give other people.",
+ "I’m allowed to choose what deserves my attention.",
+ "I can let a good moment be enough."
+];
+
+function refreshDailyAffirmation(date = new Date()) {
+ const quote = document.getElementById("dailyAffirmation");
+ if (!quote) return;
+ const day = Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000);
+ const index = ((day % dailyAffirmations.length) + dailyAffirmations.length) % dailyAffirmations.length;
+ quote.textContent = dailyAffirmations[index];
+}
+
 function render(){nav();let v="";
 if (section === "Meals") v = mealPlanner();
 if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
@@ -386,7 +420,7 @@ if (section === "Home") {
  const currentMood = moods.find(([id]) => id === mood);
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
  v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Mood">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
-  + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p>' 
+  + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p><aside class="daily-affirmation" aria-labelledby="dailyAffirmationTitle"><h3 id="dailyAffirmationTitle">Daily affirmation</h3><p id="dailyAffirmation"></p></aside>'
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
   + panel("Upcoming plans", appointmentLink + upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
 }
@@ -465,6 +499,7 @@ if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan tod
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Meals") bindMealPlanner();
+ if (section === "Home") refreshDailyAffirmation();
  document.querySelectorAll("[data-pin-tool]").forEach(button => {
   button.onclick = () => {
    const page = button.dataset.pinTool;
@@ -566,6 +601,10 @@ let cn=document.getElementById("copyNotes");if(cn)cn.onclick=()=>navigator.clipb
 }
 applyAesthetic();
 render();
+document.addEventListener("visibilitychange", () => {
+ if (!document.hidden) refreshDailyAffirmation();
+});
+setInterval(() => refreshDailyAffirmation(), 30000);
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
 </body></html>
