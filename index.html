@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#71836b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Little Things">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>The Little Things</title>
+<style>
+:root{--sage:#71836b;--dark:#394b38;--muted:#78836f;--cream:#f4f1e8;--paper:#fffefa;--line:#e3e2d8;--peach:#eee4d9}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--dark);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{padding:22px 18px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand small{letter-spacing:.12em;color:var(--muted);font-weight:700;font-size:10px}.brand h1{font-family:Georgia,serif;font-size:27px;margin:3px 0}.brand p{margin:0;color:var(--muted);font-size:12px}header img{width:66px;height:66px;border-radius:18px;object-fit:cover}
+main{max-width:720px;margin:auto;padding:0 14px 30px}.hero{background:#e2e7d9;border-radius:18px;padding:17px;margin-bottom:14px}.hero h2{margin:0 0 5px;font: bold 21px Georgia}.hero p{margin:0 0 13px;color:#687763;font-size:13px}.stats{display:flex;justify-content:space-between;gap:8px}.stat strong{display:block;font-size:22px}.stat span{font-size:11px;color:#687763}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0}.navbtn{border:0;border-radius:12px;background:var(--paper);padding:10px 3px;color:#61745a;font-size:11px;font-weight:650}.navbtn.active{background:var(--sage);color:white}.navbtn span{display:block;font-size:18px;margin-bottom:3px}
+.panel{background:var(--paper);border-radius:17px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #514b3510}.panel h2{font: bold 20px Georgia;margin:0 0 13px}.muted{color:var(--muted);font-size:12px}.row{display:flex;align-items:center;gap:9px}.row>*:first-child{flex:1}
+input,textarea,select{font:inherit;border:1px solid var(--line);background:#fff;border-radius:10px;padding:11px;color:var(--dark);width:100%;min-width:0}textarea{min-height:150px;resize:vertical}
+button{font:inherit;cursor:pointer}.add{border:0;background:var(--sage);color:white;border-radius:10px;padding:11px 14px;font-weight:650}.secondary{border:0;background:#e7ebdf;color:var(--dark);border-radius:10px;padding:10px 12px;font-weight:650}.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}.item input[type=checkbox]{width:19px;height:19px;accent-color:var(--sage)}.item .name{flex:1;font-size:14px}.item.done .name{text-decoration:line-through;color:#969b8e}.delete{border:0;background:transparent;color:#9b8275;font-size:18px;padding:4px 7px}
+.progress{height:8px;border-radius:20px;background:#dfe4d8;overflow:hidden;margin:8px 0}.progress i{display:block;height:100%;background:var(--sage);width:0}
+.cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mini{background:#f0eee5;border-radius:13px;padding:13px}.mini b{display:block;margin-bottom:5px}.mini p{margin:0;color:var(--muted);font-size:12px}
+.day{border-top:1px solid var(--line);padding:11px 0}.day strong{display:block;margin-bottom:6px}.tag{display:inline-block;background:#e8ecdf;border-radius:20px;padding:5px 9px;font-size:12px;margin:3px}
+footer{text-align:center;color:var(--muted);font:italic 12px Georgia;padding:18px}
+@media(min-width:600px){nav{grid-template-columns:repeat(6,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="brand"><small>YOUR PERSONAL SPACE</small><h1>The Little Things</h1><p>A calmer way to organize life 🌿</p></div><img src="icon-192.png" alt="The Little Things app icon"></header>
+<main>
+<section class="hero"><h2>Welcome home 🌿</h2><p>One little step at a time.</p><div class="stats"><div class="stat"><strong id="taskStat">0/0</strong><span>Tasks done</span></div><div class="stat"><strong id="billStat">0</strong><span>Bills unpaid</span></div><div class="stat"><strong id="shopStat">0</strong><span>Shopping items</span></div></div></section>
+<nav id="nav"></nav><div id="view"></div><footer>Little by little, a little becomes a lot.</footer>
+</main>
+<script>
+const sections=[["Home","⌂"],["Calendar","▦"],["Tasks","☷"],["Money","$"],["Pets","🐾"],["Shopping","🛒"],["Groceries","🥕"],["Wishlist","♡"],["Projects","✂"],["Routines","☀"],["Notes","✎"],["Appointments","🗓"],["Circles","◎"]];
+const defaults={tasks:[{id:1,name:"Review weekly schedule",done:false},{id:2,name:"Laundry",done:false},{id:3,name:"Work on crochet project",done:false},{id:4,name:"Pet care",done:true}],events:[{id:1,name:"Weekly reset",day:"Monday"},{id:2,name:"Laundry",day:"Wednesday"},{id:3,name:"Plan next week",day:"Sunday"}],appointments:[],groceries:[],wishlist:[],bills:[{id:1,name:"Rent",amount:800,paid:false},{id:2,name:"Car payment",amount:300,paid:false},{id:3,name:"Internet",amount:60,paid:false}],budget:2000,expenses:[],pets:[false,false,false,false],shopping:["Milk","Eggs","Cat food","Laundry detergent"],projects:[{id:1,name:"Omega sweater",progress:45},{id:2,name:"Baby blanket",progress:70},{id:3,name:"Craft project",progress:10}],routines:[false,false,false,false],notes:"",
+circles:[
+{id:1,name:"Our Household",members:["You","Household member"],shared:["tasks","calendar","pets","shopping"],activity:["You created Our Household."]},
+{id:2,name:"Family",members:["You","Family member"],shared:["calendar","events"],activity:["You created the Family circle."]}
+],
+activeCircle:1
+};
+let data;try{data={...defaults,...JSON.parse(localStorage.getItem("littleThingsData")||"{}")}}catch(e){data=structuredClone(defaults)}
+let section="Home";
+function save(){localStorage.setItem("littleThingsData",JSON.stringify(data));stats()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function stats(){let done=data.tasks.filter(x=>x.done).length;document.getElementById("taskStat").textContent=`${done}/${data.tasks.length}`;document.getElementById("billStat").textContent=data.bills.filter(x=>!x.paid).length;document.getElementById("shopStat").textContent=data.shopping.length}
+function nav(){document.getElementById("nav").innerHTML=sections.map(([n,ic])=>`<button class="navbtn ${section===n?"active":""}" data-section="${n}"><span>${ic}</span>${n}</button>`).join("");document.querySelectorAll("[data-section]").forEach(b=>b.onclick=()=>{section=b.dataset.section;render()})}
+function checkList(items,kind){return items.map((x,i)=>`<div class="item ${x.done?"done":""}"><input type="checkbox" data-check="${kind}" data-id="${x.id}" ${x.done?"checked":""}><span class="name">${esc(x.name)}</span><button class="delete" data-del="${kind}" data-id="${x.id}">×</button></div>`).join("")}
+function addForm(placeholder,kind){return `<form class="row" data-add="${kind}"><input name="name" placeholder="${placeholder}" required><button class="add">Add</button></form>`}
+function panel(title,body){return `<section class="panel"><h2>${title}</h2>${body}</section>`}
+function render(){nav();let v="";
+if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
+if(section==="Home"){let upcoming=data.events.slice(0,4).map(e=>`<span class="tag">${esc(e.day)} · ${esc(e.name)}</span>`).join("")||'<p class="muted">No events added yet.</p>';v=panel("Today's priorities",checkList(data.tasks.slice(0,5),"tasks")+`<button class="secondary" data-go="Tasks">Manage tasks</button>`)+panel("Coming up",upcoming)+`<div class="cardgrid"><div class="mini"><b>Home & pets</b><p>Keep household care on track.</p></div><div class="mini"><b>Creative time</b><p>Make room for the things you love.</p></div></div>`}
+if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
+if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
+
+if(section==="Appointments"){
+let upcoming=data.appointments.slice().sort((a,b)=>(a.date+"T"+(a.time||"00:00")).localeCompare(b.date+"T"+(b.time||"00:00")));
+v=panel("Add an appointment",`<p class="muted">Keep doctor visits, hair appointments, meetings, and everything in between in one place.</p>
+<form id="appointmentForm">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+<div><label class="muted">Appointment</label><input name="name" placeholder="e.g. Dentist" required></div>
+<div><label class="muted">Type</label><select name="type"><option>Personal</option><option>Medical</option><option>Work</option><option>Pet</option><option>Other</option></select></div>
+<div><label class="muted">Date</label><input name="date" type="date" required></div>
+<div><label class="muted">Time</label><input name="time" type="time"></div>
+</div>
+<div style="margin-top:9px"><label class="muted">Location / provider</label><input name="location" placeholder="Address, office, or person"></div>
+<div style="margin-top:9px"><label class="muted">Notes</label><textarea name="notes" placeholder="Things to bring, questions to ask, reminders…" style="min-height:75px"></textarea></div>
+<div style="margin-top:10px"><button class="add" type="submit">Save appointment</button></div>
+</form>`)
++panel("Your appointments",upcoming.length?upcoming.map(a=>`<div class="day">
+<div class="row"><strong>${esc(a.name)}</strong><button class="delete" data-appointment-del="${a.id}" aria-label="Delete appointment">×</button></div>
+<span class="tag">${esc(new Date(a.date+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}))}${a.time?" · "+esc(new Date("2000-01-01T"+a.time).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})):""}</span>
+<span class="tag">${esc(a.type||"Personal")}</span>
+${a.location?`<div class="muted" style="margin-top:6px">📍 ${esc(a.location)}</div>`:""}
+${a.notes?`<p class="muted" style="white-space:pre-wrap">${esc(a.notes)}</p>`:""}
+</div>`).join(""):'<p class="muted">No appointments yet. Add one above and it will appear here.</p>');
+}
+
+if(section==="Money"){let spent=data.expenses.reduce((a,x)=>a+x.amount,0);v=panel("Monthly overview",`<label class="muted">Monthly spending budget</label><input id="budget" type="number" value="${data.budget}"><div class="cardgrid"><div class="mini"><b>$${spent.toFixed(2)}</b><p>Expenses entered</p></div><div class="mini"><b>$${(Number(data.budget)-spent).toFixed(2)}</b><p>Budget remaining</p></div></div>`)+panel("Track an expense",`<form class="row" id="expenseForm"><input name="amount" type="number" min="0.01" step="0.01" placeholder="Amount $" required><button class="add">Add</button></form>`)+panel("Upcoming bills",data.bills.map(b=>`<div class="item"><input type="checkbox" data-bill="${b.id}" ${b.paid?"checked":""}><span class="name">${esc(b.name)} · $${Number(b.amount).toFixed(2)}</span></div>`).join(""))}
+if(section==="Pets"){let labels=["Morning feeding","Refresh water bowls","Check and clean litter","Playtime and attention"];v=panel("Daily pet care",`<p class="muted">A little care goes a long way 🐾</p>`+labels.map((x,i)=>`<div class="item"><input type="checkbox" data-pet="${i}" ${data.pets[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetPets">Reset daily checklist</button>`)}
+if(section==="Groceries"){
+const cats=[...new Set(["Produce","Meat & seafood","Frozen","Dairy & eggs","Bakery","Pantry","Drinks","Water","Snacks","Body care","Hair products","Skincare","Household","Pet supplies","Pharmacy & health","Other",...data.groceries.map(x=>x.category)])];
+v=panel("Grocery & essentials",`<p class="muted">${data.groceries.filter(x=>x.done).length} of ${data.groceries.length} purchased</p><form id="groceryForm"><input name="name" placeholder="Product name" required><input name="brand" placeholder="Brand"><input name="qty" placeholder="Quantity or size"><label>Category</label><select name="category">${cats.map(c=>`<option>${esc(c)}</option>`).join("")}</select><input name="custom" placeholder="Or enter a custom category"><textarea name="description" placeholder="Product description, scent, flavor, exact version…"></textarea><label>Product photo (optional)</label><input name="photo" type="file" accept="image/*"><button class="add" style="margin-top:8px">Add item</button></form>`)+panel("Shop by category",cats.map(c=>{let items=data.groceries.filter(x=>x.category===c);return `<details class="day" ${items.length?'open':''}><summary><strong>${esc(c)} (${items.filter(x=>!x.done).length})</strong></summary>${items.map(x=>`<div class="item"><input type="checkbox" data-check="groceries" data-id="${x.id}" ${x.done?"checked":""}><div class="name" style="flex:1;${x.done?'text-decoration:line-through':''}"><strong>${esc(x.name)}</strong><div class="muted">${esc([x.brand,x.qty].filter(Boolean).join(' · '))}</div><div class="muted">${esc(x.description||'')}</div>${x.photo&&/^data:image\/jpeg;base64,/.test(x.photo)?`<img src="${x.photo}" alt="Product reference" style="width:100px;height:100px;object-fit:contain;border-radius:8px">`:''}</div><button class="delete" data-del="groceries" data-id="${x.id}">×</button></div>`).join("")||'<p class="muted">No items yet</p>'}</details>`}).join(""))+`<button class="secondary" id="clearGroceries">Clear purchased items</button> <button class="secondary" id="copyGroceries">Copy remaining list</button>`;
+}
+if(section==="Wishlist"){
+let items=data.wishlist, total=items.filter(x=>!x.done).reduce((a,x)=>a+Number(x.price||0),0);
+v=panel("♡ My wishlist",`<p class="muted">${items.filter(x=>!x.done).length} wishes remaining · Estimated total: $${total.toFixed(2)}</p><form id="wishForm"><input name="name" placeholder="Product name" required><input name="brand" placeholder="Brand"><label>Estimated price ($)</label><input name="price" type="number" min="0" step="0.01" placeholder="Optional"><label>Category</label><select name="category">${["Clothing","Beauty","Hobbies","Home","Electronics","Gifts","Other"].map(x=>`<option>${x}</option>`).join("")}</select><label>Priority</label><select name="priority"><option>Really want</option><option>Would like</option><option>Someday</option></select><input name="link" type="url" placeholder="https://… (product link)"><textarea name="notes" placeholder="Description, color, size, notes…"></textarea><label>Product photo (optional)</label><input name="photo" type="file" accept="image/*"><button class="add">Add to wishlist</button></form>`)+panel("Saved wishes",items.map(x=>`<div class="day"><div class="row"><strong>${esc(x.name)}</strong><button class="delete" data-del="wishlist" data-id="${x.id}">×</button></div><div class="muted">${esc(x.brand||"")} · ${esc(x.category)} · ${esc(x.priority)}</div>${x.price!==""?`<p>$${Number(x.price).toFixed(2)}</p>`:""}${x.photo&&/^data:image\/jpeg;base64,/.test(x.photo)?`<img src="${x.photo}" alt="Product photo" style="width:120px;height:120px;object-fit:contain;border-radius:8px">`:""}<p>${esc(x.notes||"")}</p>${/^https?:\/\//i.test(x.link)?`<a href="${esc(x.link)}" target="_blank" rel="noopener noreferrer">View product</a>`:""}<div class="item"><input type="checkbox" data-check="wishlist" data-id="${x.id}" ${x.done?"checked":""}><span>Purchased or received</span></div></div>`).join("")||'<p class="muted">Add something you are dreaming of!</p>');
+}
+
+if(section==="Shopping"){v=panel("Shopping list",addForm("Add an item…","shopping")+data.shopping.map((x,i)=>`<div class="item"><input type="checkbox"><span class="name">${esc(x)}</span><button class="delete" data-shop="${i}">×</button></div>`).join("")+`<button class="secondary" id="copyShop">Copy list</button>`)}
+if(section==="Projects"){v=panel("Creative projects",data.projects.map(p=>`<div class="day"><strong>${esc(p.name)}</strong><div class="muted">${p.progress}% complete</div><input type="range" min="0" max="100" step="5" value="${p.progress}" data-project="${p.id}"></div>`).join("")+`<form class="row" id="projectForm"><input name="name" placeholder="New project…" required><button class="add">Add</button></form>`)}
+if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan today's priorities","Evening reset"];v=panel("Daily routines",labels.map((x,i)=>`<div class="item"><input type="checkbox" data-routine="${i}" ${data.routines[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetRoutine">Reset checklist</button>`)}
+if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
+document.getElementById("view").innerHTML=v;bind();stats()}
+function bind(){
+let wf=document.getElementById("wishForm");if(wf)wf.onsubmit=async e=>{e.preventDefault();let f=new FormData(wf),name=f.get('name').trim(),btn=wf.querySelector('button');if(!name)return;btn.disabled=true;try{let photo='',file=f.get('photo');if(file&&file.size){let url=URL.createObjectURL(file);try{let im=new Image();im.src=url;await im.decode();let c=document.createElement('canvas'),scale=Math.min(1,480/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));c.getContext('2d').drawImage(im,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',0.65)}finally{URL.revokeObjectURL(url)}}let item={id:Date.now(),name,photo,done:false};for(let k of ['brand','price','category','priority','link','notes'])item[k]=f.get(k).trim();data.wishlist.push(item);try{save()}catch(err){data.wishlist.pop();throw err}render()}catch(err){alert('Could not save item. Try a smaller photo or free device storage.');btn.disabled=false}};
+
+let gf=document.getElementById("groceryForm");if(gf)gf.onsubmit=async e=>{e.preventDefault();let f=new FormData(gf),name=f.get("name").trim();if(!name)return;let btn=gf.querySelector('button');btn.disabled=true;let photo='';try{let file=f.get('photo');if(file&&file.size){let url=URL.createObjectURL(file);try{let im=new Image();im.src=url;await im.decode();let c=document.createElement('canvas'),scale=Math.min(1,480/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));c.getContext('2d').drawImage(im,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',0.65)}finally{URL.revokeObjectURL(url)}}let item={id:Date.now(),name,qty:f.get('qty').trim(),brand:f.get('brand').trim(),description:f.get('description').trim(),category:f.get('custom').trim()||f.get('category'),photo,done:false};data.groceries.push(item);try{localStorage.setItem('littleThingsData',JSON.stringify(data))}catch(err){data.groceries.pop();throw new Error('Device storage is full. Try adding without a photo.')}render()}catch(err){alert(err.message||'Could not save item. Try another photo.');btn.disabled=false}};
+let cg=document.getElementById("clearGroceries");if(cg)cg.onclick=()=>{data.groceries=data.groceries.filter(x=>!x.done);save();render()};
+let cp=document.getElementById("copyGroceries");if(cp)cp.onclick=async()=>{let t=data.groceries.filter(x=>!x.done).map(x=>x.name+(x.qty?" — "+x.qty:"")).join("\n");try{await navigator.clipboard.writeText(t);alert("List copied")}catch(e){prompt("Copy your grocery list",t)}};
+
+
+let af=document.getElementById("appointmentForm");if(af)af.onsubmit=e=>{
+e.preventDefault();let f=new FormData(af);
+data.appointments.push({id:Date.now(),name:f.get("name").trim(),type:f.get("type"),date:f.get("date"),time:f.get("time"),location:f.get("location").trim(),notes:f.get("notes").trim()});
+save();render();
+};
+document.querySelectorAll("[data-appointment-del]").forEach(el=>el.onclick=()=>{
+data.appointments=data.appointments.filter(a=>a.id!=el.dataset.appointmentDel);save();render();
+});
+
+let cf=document.getElementById("circleForm");if(cf)cf.onsubmit=e=>{e.preventDefault();let name=new FormData(cf).get("name").trim();if(name){data.circles.push({id:Date.now(),name,members:["You"],activity:["Circle created"]});save();render()}};
+document.querySelectorAll("[data-invite]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let c=data.circles.find(x=>x.id==f.dataset.invite);let member=new FormData(f).get("member").trim();if(c&&member){c.members.push(member);c.activity.push(member+" added to the circle");save();render()}});
+document.querySelectorAll("[data-circle-del]").forEach(b=>b.onclick=()=>{if(confirm("Remove this circle from this device?")){data.circles=data.circles.filter(c=>c.id!=b.dataset.circleDel);save();render()}});
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{section=b.dataset.go;render()});
+document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{let x=data[el.dataset.check].find(x=>x.id==el.dataset.id);if(x)x.done=el.checked;save();render()});
+document.querySelectorAll("[data-del]").forEach(el=>el.onclick=()=>{data[el.dataset.del]=data[el.dataset.del].filter(x=>x.id!=el.dataset.id);save();render()});
+document.querySelectorAll("form[data-add]").forEach(f=>f.onsubmit=e=>{e.preventDefault();let name=new FormData(f).get("name").trim();if(!name)return;let k=f.dataset.add;if(k==="shopping")data.shopping.push(name);else data[k].push({id:Date.now(),name,...(k==="events"?{day:document.getElementById("eventDay").value}:{done:false})});save();render()});
+document.querySelectorAll("[data-bill]").forEach(el=>el.onchange=()=>{let b=data.bills.find(x=>x.id==el.dataset.bill);b.paid=el.checked;save()});
+document.querySelectorAll("[data-pet]").forEach(el=>el.onchange=()=>{data.pets[+el.dataset.pet]=el.checked;save()});
+document.querySelectorAll("[data-routine]").forEach(el=>el.onchange=()=>{data.routines[+el.dataset.routine]=el.checked;save()});
+document.querySelectorAll("[data-shop]").forEach(el=>el.onclick=()=>{data.shopping.splice(+el.dataset.shop,1);save();render()});
+let circleSelect=document.getElementById("circleSelect");if(circleSelect)circleSelect.onchange=()=>{data.activeCircle=+circleSelect.value;save();render()};
+let newCircle=document.getElementById("newCircle");if(newCircle)newCircle.onclick=()=>{let name=prompt("Name your new circle");if(name&&name.trim()){let c={id:Date.now(),name:name.trim(),members:["You"],shared:[],activity:["You created this circle."]};data.circles.push(c);data.activeCircle=c.id;save();render()}};
+document.querySelectorAll("[data-share]").forEach(el=>el.onchange=()=>{let c=data.circles.find(c=>c.id===data.activeCircle);let key=el.dataset.share;if(el.checked&&!c.shared.includes(key))c.shared.push(key);if(!el.checked)c.shared=c.shared.filter(x=>x!==key);c.activity.push(`You ${el.checked?"enabled":"disabled"} sharing for ${el.parentElement.querySelector(".name").textContent}.`);save();render()});
+let invite=document.getElementById("inviteForm");if(invite)invite.onsubmit=e=>{e.preventDefault();let name=new FormData(invite).get("member").trim();if(!name)return;let c=data.circles.find(c=>c.id===data.activeCircle);c.members.push(name);c.activity.push(`You added ${name} to this circle (local demo).`);save();render()};
+document.querySelectorAll("[data-project]").forEach(el=>el.oninput=()=>{let p=data.projects.find(x=>x.id==el.dataset.project);p.progress=+el.value;save();el.previousElementSibling.textContent=p.progress+"% complete"});
+let budget=document.getElementById("budget");if(budget)budget.onchange=()=>{data.budget=+budget.value;save();render()};
+let ef=document.getElementById("expenseForm");if(ef)ef.onsubmit=e=>{e.preventDefault();data.expenses.push({amount:+new FormData(ef).get("amount")});save();render()};
+let pf=document.getElementById("projectForm");if(pf)pf.onsubmit=e=>{e.preventDefault();data.projects.push({id:Date.now(),name:new FormData(pf).get("name"),progress:0});save();render()};
+let n=document.getElementById("notes");if(n)n.oninput=()=>{data.notes=n.value;save()};
+let rp=document.getElementById("resetPets");if(rp)rp.onclick=()=>{data.pets=[false,false,false,false];save();render()};
+let rr=document.getElementById("resetRoutine");if(rr)rr.onclick=()=>{data.routines=[false,false,false,false];save();render()};
+let cs=document.getElementById("copyShop");if(cs)cs.onclick=()=>navigator.clipboard?.writeText(data.shopping.join("\n"));
+let cn=document.getElementById("copyNotes");if(cn)cn.onclick=()=>navigator.clipboard?.writeText(data.notes);
+}
+render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script>
+</body></html>
