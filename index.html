@@ -78,6 +78,11 @@ input,textarea,select{background:var(--paper)}
 .theme-task{font-size:14px;color:var(--dark)}
 .theme-action{justify-self:start;background:var(--sage);color:#fff;border-radius:6px;padding:3px 7px;font-size:13px}
 @media(max-width:360px){.theme-grid{grid-template-columns:1fr}}
+.welcome-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.profile-avatar{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--paper);border:1px solid var(--line);object-fit:cover;color:var(--dark);font-weight:700}
+.profile-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.profile-options button[aria-pressed="true"]{outline:2px solid var(--sage);outline-offset:1px}
+.profile-actions{margin-top:14px}
 </style>
 </head>
 <body>
@@ -106,6 +111,52 @@ try { savedAesthetic = localStorage.getItem(aestheticKey); } catch {}
 let aesthetic = aesthetics.some(([id]) => id === savedAesthetic) ? savedAesthetic : "diary";
 let choosingFirstTheme = !savedAesthetic;
 let section = choosingFirstTheme ? "Appearance" : "Home";
+let choosingFirstPicture = false;
+const profileKey = "littleThingsProfilePicture";
+const avatars = { flower: ["🌼", "Flower"], cat: ["🐱", "Cat"], moon: ["🌙", "Moon"], berry: ["🍓", "Strawberry"] };
+let profilePicture = "";
+try { profilePicture = localStorage.getItem(profileKey) || ""; } catch {}
+
+function profileAvatar() {
+ if (/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(profilePicture)) {
+  return `<img class="profile-avatar" src="${profilePicture}" alt="">`;
+ }
+ const initial = Array.from((data.displayName || "").trim())[0]?.toUpperCase() || "☺";
+ const symbol = Object.hasOwn(avatars, profilePicture) ? avatars[profilePicture][0] : initial;
+ return `<span class="profile-avatar" aria-hidden="true">${esc(symbol)}</span>`;
+}
+
+function finishProfileSetup() {
+ choosingFirstPicture = false;
+ section = "Home";
+ render();
+}
+
+function setProfilePicture(picture) {
+ localStorage.setItem(profileKey, picture);
+ profilePicture = picture;
+ render();
+}
+
+async function importProfilePicture(file) {
+ const url = URL.createObjectURL(file);
+ try {
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+  const crop = Math.min(image.naturalWidth, image.naturalHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 192;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, 192, 192);
+  ctx.drawImage(image, (image.naturalWidth - crop) / 2, (image.naturalHeight - crop) / 2,
+   crop, crop, 0, 0, 192, 192);
+  setProfilePicture(canvas.toDataURL("image/jpeg", 0.82));
+ } finally {
+  URL.revokeObjectURL(url);
+ }
+}
 
 function applyAesthetic() {
  document.documentElement.dataset.aesthetic = aesthetic;
@@ -117,7 +168,10 @@ function chooseAesthetic(id) {
  aesthetic = id;
  try { localStorage.setItem(aestheticKey, id); } catch {}
  applyAesthetic();
- if (choosingFirstTheme) section = "Home";
+ if (choosingFirstTheme) {
+  choosingFirstPicture = true;
+  section = "Profile";
+ }
  choosingFirstTheme = false;
  render();
  if (section === "Appearance") document.querySelector('[data-set-aesthetic="' + id + '"]').focus();
@@ -134,7 +188,7 @@ function nav() {
  tabs.push(["More", "⋯"]);
  const active = primary.includes(section) ? section : "More";
  const navigation = document.getElementById("nav");
- navigation.hidden = choosingFirstTheme;
+ navigation.hidden = choosingFirstTheme || choosingFirstPicture;
  navigation.innerHTML = tabs.map(([name, icon]) => `<button class="navbtn ${active === name ? "active" : ""}" data-section="${name}" ${active === name ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon}</span>${name}</button>`).join("");
  navigation.querySelectorAll("[data-section]").forEach(button => {
   button.onclick = () => { section = button.dataset.section; render(); window.scrollTo(0, 0); };
@@ -148,7 +202,7 @@ if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people
 if (section === "Home") {
  const upcoming = data.events.slice(0, 3).map(event => `<div class="item"><span class="name">${esc(event.name)}</span><span class="muted">${esc(event.day)}</span></div>`).join("") || '<p class="muted">No plans yet.</p>';
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
- v = '<aside class="welcome-note" aria-label="Welcome"><p>Welcome back' + greeting + '</p><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button></aside>'
+ v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button></aside>'
   + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p>' 
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
   + panel("Upcoming plans", upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
@@ -160,11 +214,25 @@ if (section === "Appearance") {
   ).join("") + '</div>'
   + (choosingFirstTheme ? '<button class="secondary" data-set-aesthetic="diary">Skip for now</button>' : '');
 }
+if (section === "Profile") {
+ v = '<h2>' + (choosingFirstPicture ? 'Choose your profile picture' : 'Profile') + '</h2>'
+  + panel("Profile picture", profileAvatar()
+   + '<p class="muted">Your picture is saved on this device.</p>'
+   + '<div class="profile-options">'
+   + Object.entries(avatars).map(([id, [icon, name]]) =>
+    `<button class="secondary" data-avatar="${id}" aria-pressed="${profilePicture === id}"><span aria-hidden="true">${icon}</span> ${name}</button>`
+   ).join("")
+   + '</div><label for="profilePhoto">Upload a photo</label><input id="profilePhoto" type="file" accept="image/*">'
+   + '<p id="profileError" role="status" class="muted"></p><div class="profile-actions">'
+   + (profilePicture ? '<button class="secondary" data-avatar="">Remove picture</button> ' : '')
+   + (choosingFirstPicture ? '<button class="add" id="finishProfile">' + (profilePicture ? 'Continue' : 'Skip for now') + '</button>' : '')
+   + '</div>');
+}
 if (section === "More") {
  const links = sections.filter(([name]) => !["Home", "Calendar", "Tasks"].includes(name));
  v = '<h2>More</h2>' + panel("Your tools", '<div class="section-grid">'
   + links.map(([name, icon]) => `<button class="section-link" data-go="${name}"><span aria-hidden="true">${icon}</span>${name}</button>`).join("")
-  + '<button class="section-link" data-go="Appearance">Appearance</button></div>');
+  + '<button class="section-link" data-go="Appearance">Appearance</button><button class="section-link" data-go="Profile">Profile</button></div>');
 }
 if(section==="Tasks"){v=panel("My to-do list",addForm("Add a task…","tasks")+checkList(data.tasks,"tasks"))}
 if(section==="Calendar"){v=panel("Weekly planner",`<p class="muted">Add recurring plans or reminders to a day.</p>${addForm("Event or reminder…","events")}<div class="row"><select id="eventDay">${["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<option>${d}</option>`).join("")}</select></div>`+["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map(d=>`<div class="day"><strong>${d}</strong>${data.events.filter(e=>e.day===d).map(e=>`<span class="tag">${esc(e.name)} <button class="delete" data-del="events" data-id="${e.id}">×</button></span>`).join("")||'<span class="muted">Nothing planned</span>'}</div>`).join(""))}
@@ -211,6 +279,28 @@ document.getElementById("view").innerHTML=v;bind();stats();
  document.querySelectorAll("[data-set-aesthetic]").forEach(button => {
   button.onclick = () => chooseAesthetic(button.dataset.setAesthetic);
  });
+ document.querySelectorAll("[data-avatar]").forEach(button => {
+  button.onclick = () => {
+   try { setProfilePicture(button.dataset.avatar); }
+   catch { document.getElementById("profileError").textContent = "Could not save your picture on this device."; }
+  };
+ });
+ const profilePhoto = document.getElementById("profilePhoto");
+ if (profilePhoto) profilePhoto.onchange = async () => {
+  const file = profilePhoto.files[0];
+  if (!file) return;
+  profilePhoto.disabled = true;
+  try { await importProfilePicture(file); }
+  catch {
+   const error = document.getElementById("profileError");
+   if (error) error.textContent = "Could not save this photo. Try a different image.";
+  } finally {
+   profilePhoto.disabled = false;
+   profilePhoto.value = "";
+  }
+ };
+ const finishProfile = document.getElementById("finishProfile");
+ if (finishProfile) finishProfile.onclick = finishProfileSetup;
  const editGreeting = document.getElementById("editGreeting");
  if (editGreeting) editGreeting.onclick = () => {
   const name = window.prompt("What name should the app greet you with?", data.displayName || "");
