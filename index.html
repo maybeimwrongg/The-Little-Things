@@ -130,6 +130,13 @@ body{font-family:var(--planner-font)}
 .weather-summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:10px 0;padding:10px 12px;background:var(--soft);border-radius:10px}
 .weather-summary button{max-width:100%;overflow-wrap:anywhere}
 .weather-results button{display:block;text-align:left;width:100%;margin:6px 0}
+.setup-welcome{max-width:520px;margin:24px auto;padding:24px 20px}
+.setup-welcome .setup-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:var(--soft);font-size:1.5rem}
+.setup-welcome h2{margin-top:14px;font-size:1.7rem}
+.setup-actions{display:flex;flex-wrap:wrap;gap:8px}
+.quick-tour{margin:0 0 18px}
+.quick-tour dt{font-weight:700}
+.quick-tour dd{margin:3px 0 12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -156,9 +163,69 @@ const aestheticKey = "littleThingsAesthetic";
 let savedAesthetic;
 try { savedAesthetic = localStorage.getItem(aestheticKey); } catch {}
 let aesthetic = aesthetics.some(([id]) => id === savedAesthetic) ? savedAesthetic : "diary";
-let choosingFirstTheme = !savedAesthetic;
-let section = choosingFirstTheme ? "Appearance" : "Home";
-let choosingFirstPicture = false;
+const setupKey = "littleThingsSetupStep";
+let setupStep;
+try { setupStep = localStorage.getItem(setupKey); } catch {}
+let choosingFirstTheme = setupStep === "theme";
+let choosingFirstPicture = setupStep === "picture";
+let section = choosingFirstTheme ? "Appearance" : choosingFirstPicture ? "Profile" : setupStep === "tour" ? "Quick tour" : savedAesthetic ? "Home" : "Welcome setup";
+let firstTour = setupStep === "tour";
+
+function quickTour() {
+ return '<h2>A quick tour</h2>' + panel("Find your way around", `<dl class="quick-tour">
+  <dt>Home</dt><dd>See your priorities, reminders, and daily affirmation. Pick a city for local weather.</dd>
+  <dt>Plan</dt><dd>Add tasks, appointments, birthdays, or dinners for the week.</dd>
+  <dt>Circles</dt><dd>Organize your household groups. Circles currently save on this device.</dd>
+  <dt>Tools</dt><dd>Find groceries, your wishlist, and settings. Tap a star to pin a favorite.</dd>
+  </dl><div class="setup-actions"><button class="add" id="finishTour">Go to Home</button>
+  ${firstTour ? '<button class="secondary" id="skipTour">Skip tour</button>' : ''}</div>`);
+}
+
+function finishQuickTour() {
+ if (firstTour) recordSetupStep("done");
+ firstTour = false;
+ section = "Home";
+ render();
+ window.scrollTo(0, 0);
+}
+
+function recordSetupStep(step) {
+ try { localStorage.setItem(setupKey, step); } catch {}
+}
+
+function welcomeSetup() {
+ return `<section class="panel setup-welcome" aria-labelledby="setupTitle">
+  <span class="setup-mark" aria-hidden="true">✿</span>
+  <h2 id="setupTitle">Thank you for choosing The Little Things!</h2>
+  <p>Let’s make a little space for your plans, routines, and favorite things.</p>
+  <form id="welcomeSetupForm">
+   <label for="setupName">What should we call you?</label>
+   <input id="setupName" name="name" maxlength="40" autocomplete="given-name" placeholder="First name or nickname" value="${esc(data.displayName || "")}">
+   <p class="muted">Your setup is saved on this device.</p>
+   <div class="setup-actions"><button class="add">Let’s get started</button><button class="secondary" type="button" id="skipSetupName">Skip name</button></div>
+   <p id="setupStatus" role="status" class="muted"></p>
+  </form></section>`;
+}
+
+function bindWelcomeSetup() {
+ const form = document.getElementById("welcomeSetupForm");
+ if (!form) return;
+ const start = name => {
+  if (name) {
+   const previous = data.displayName;
+   data.displayName = name;
+   try { save(); }
+   catch { data.displayName = previous; document.getElementById("setupStatus").textContent = "Could not save your name. You can skip this step."; return; }
+  }
+  recordSetupStep("theme");
+  choosingFirstTheme = true;
+  section = "Appearance";
+  render();
+  window.scrollTo(0, 0);
+ };
+ form.onsubmit = event => { event.preventDefault(); start(form.elements.name.value.trim().slice(0, 40)); };
+ document.getElementById("skipSetupName").onclick = () => start("");
+}
 const moodKey = "littleThingsMood";
 const moods = [["happy","😊","Happy"],["calm","😌","Calm"],["tired","😴","Tired"],["stressed","😟","Stressed"],["down","😔","Down"]];
 let mood = "";
@@ -179,9 +246,12 @@ function profileAvatar() {
 }
 
 function finishProfileSetup() {
+ recordSetupStep("tour");
  choosingFirstPicture = false;
- section = "Home";
+ firstTour = true;
+ section = "Quick tour";
  render();
+ window.scrollTo(0, 0);
 }
 
 function setProfilePicture(picture) {
@@ -221,6 +291,7 @@ function chooseAesthetic(id) {
  try { localStorage.setItem(aestheticKey, id); } catch {}
  applyAesthetic();
  if (choosingFirstTheme) {
+  recordSetupStep("picture");
   choosingFirstPicture = true;
   section = "Profile";
  }
@@ -242,10 +313,10 @@ const toolGroups = [
  ["Money", [["Money", "Bills & budget"], ["Wishlist", "Wishlist"]]],
  ["Wellness", [["Mood", "Mood"], ["Routines", "Daily routines"]]],
  ["Creative & personal", [["Projects", "Creative projects"], ["Notes", "Notes"]]],
- ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"]]]
+ ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"], ["Quick tour", "Quick tour"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"], ["Quick tour", "?" ]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -267,7 +338,7 @@ function nav() {
  const active = section === "Plan" || planning.some(([page]) => page === section)
   ? "Plan" : ["Home", "Circles"].includes(section) ? section : "Tools";
  const navigation = document.getElementById("nav");
- navigation.hidden = choosingFirstTheme || choosingFirstPicture;
+ navigation.hidden = section === "Welcome setup" || choosingFirstTheme || choosingFirstPicture || firstTour;
  navigation.innerHTML = tabs.map(([name, icon]) => `<button class="navbtn ${active === name ? "active" : ""}" data-section="${name}" ${active === name ? 'aria-current="page"' : ""}><span aria-hidden="true">${icon}</span>${name}</button>`).join("");
  navigation.querySelectorAll("[data-section]").forEach(button => {
   button.onclick = () => { section = button.dataset.section; render(); window.scrollTo(0, 0); };
@@ -834,6 +905,8 @@ function bindWeather() {
 }
 
 function render(){nav();let v="";
+if (section === "Welcome setup") v = welcomeSetup();
+if (section === "Quick tour") v = quickTour();
 if (section === "Weather") v = weatherPanel();
 if (section === "Occasions") v = occasionPlanner();
 if (section === "Meals") v = mealPlanner();
@@ -941,6 +1014,12 @@ if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps
 document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Meals") bindMealPlanner();
  if (section === "Appearance") bindTypography();
+ if (section === "Welcome setup") bindWelcomeSetup();
+ if (section === "Quick tour") {
+  document.getElementById("finishTour").onclick = finishQuickTour;
+  const skip = document.getElementById("skipTour");
+  if (skip) skip.onclick = finishQuickTour;
+ }
  if (section === "Weather") bindWeather();
  if (section === "Home" || section === "Weather") refreshWeather();
  if (section === "Home") { refreshDailyAffirmation(); refreshDueReminders(); }
