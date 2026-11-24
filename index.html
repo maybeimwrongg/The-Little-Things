@@ -88,6 +88,13 @@ input,textarea,select{background:var(--paper)}
 .pin-tool{flex:none;width:48px;border:0;border-radius:9px;background:var(--soft);color:var(--dark);font-size:22px}
 .pin-tool[aria-pressed="true"]{background:var(--selected)}
 .next-appointment{width:100%;margin-top:12px}
+.meal-week{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.meal-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:4px;margin:12px 0}
+.meal-days button{padding:4px;font-size:14px}
+.meal-days button[aria-pressed="true"]{background:var(--sage);color:#fff}
+.meal-recipe{margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px}
+.meal-recipe summary{cursor:pointer;font-weight:650}
+.meal-actions{display:flex;flex-wrap:wrap;gap:8px}
 </style>
 </head>
 <body>
@@ -193,7 +200,7 @@ function stats() {
  if (count) count.textContent = data.tasks.filter(task => task.done).length + " of " + data.tasks.length;
 }
 const planning = [
- ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"]
+ ["Calendar", "Weekly calendar"], ["Appointments", "Appointments"], ["Tasks", "Tasks"], ["Meals", "Meal planning"]
 ];
 const toolGroups = [
  ["Everyday", [["Groceries", "Groceries & essentials"], ["Shopping", "Shopping list"], ["Pets", "Pet care"]]],
@@ -203,7 +210,7 @@ const toolGroups = [
  ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -241,7 +248,129 @@ function moodPanel() {
    + (mood ? '<button class="secondary" data-mood="">Clear mood</button>' : '')
    + '</div><p id="moodError" role="status" class="muted"></p>');
 }
+const dinnerRecipes = [
+ { name: "Chicken Parmesan", aliases: ["chicken parm", "chicken parmigiana"], versions: [
+  ["Crispy oven-baked", ["2 thin chicken cutlets", "1 egg", "¾ cup panko", "¼ cup grated Parmesan", "1 cup marinara", "½ cup shredded mozzarella", "Olive oil"],
+   "Heat oven to 425°F. Dip chicken in beaten egg, then in panko mixed with Parmesan. Set on an oiled sheet pan and bake, flipping once. Add warm marinara and mozzarella near the end. Cook until the chicken reaches 165°F and the cheese melts."],
+  ["Skillet chicken Parmesan", ["2 thin chicken cutlets", "Salt and pepper", "1 tbsp olive oil", "1 cup marinara", "½ cup shredded mozzarella", "¼ cup grated Parmesan"],
+   "Season chicken and brown both sides in the oil. Pour in marinara and simmer until the chicken reaches 165°F. Sprinkle on both cheeses, cover, and cook just until melted."]
+ ]},
+ { name: "Tacos", aliases: ["black bean tacos", "chicken tacos"], versions: [
+  ["Black bean tacos", ["6 tortillas", "1 can black beans", "1 tsp cumin", "½ cup salsa", "1 avocado", "1 lime"],
+   "Drain and rinse beans. Simmer with cumin and salsa until hot, mash lightly, and spoon into warm tortillas. Finish with avocado and lime."],
+  ["Chicken and pepper tacos", ["6 tortillas", "1 lb sliced chicken breast", "1 bell pepper", "1 tbsp oil", "1 tsp chili powder", "1 lime"],
+   "Sauté sliced pepper in oil, then add chicken and chili powder. Cook until the chicken reaches 165°F. Spoon into warm tortillas and finish with lime."]
+ ]},
+ { name: "Pasta", aliases: ["tomato pasta", "pesto pasta"], versions: [
+  ["Tomato and basil pasta", ["8 oz pasta", "2 cloves garlic", "1 tbsp olive oil", "1 can crushed tomatoes", "Fresh basil", "Parmesan"],
+   "Boil pasta. Sauté garlic in oil, stir in crushed tomatoes, and simmer until thickened. Toss with pasta, basil, and Parmesan."],
+  ["Pesto and pea pasta", ["8 oz pasta", "½ cup frozen peas", "⅓ cup pesto", "1 lemon", "Parmesan"],
+   "Boil pasta and add peas near the end. Reserve a splash of cooking water, drain, then toss with pesto, lemon, and Parmesan. Loosen with the reserved water."]
+ ]}
+];
+
+const mealDateKey = date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+const mealNameKey = name => name.trim().toLowerCase().replace(/\s+/g, " ");
+const recipesFor = name => dinnerRecipes.find(group => [group.name, ...group.aliases].some(alias => mealNameKey(alias) === mealNameKey(name)));
+const dinnerHistoryKey = name => "dinner:" + mealNameKey(recipesFor(name)?.name || name);
+const mealPlan = data.mealPlan ??= {};
+const dinnerHistory = data.dinnerHistory ??= {};
+let mealDay = new Date();
+mealDay.setHours(12, 0, 0, 0);
+
+function mealWeekDays() {
+ const monday = new Date(mealDay);
+ monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+ return Array.from({length: 7}, (_, index) => {
+  const date = new Date(monday);
+  date.setDate(date.getDate() + index);
+  return date;
+ });
+}
+
+function mealPlanner() {
+ const days = mealWeekDays();
+ const format = date => date.toLocaleDateString(undefined, {month: "short", day: "numeric"});
+ const key = mealDateKey(mealDay);
+ const dinner = mealPlan[key];
+ const last = dinner && dinnerHistory[dinnerHistoryKey(dinner.name)];
+ const recipes = dinner && recipesFor(dinner.name)?.versions;
+ const recipeCards = (recipes || []).map(([title, ingredients, instructions], index) =>
+  `<details class="meal-recipe"><summary>${esc(title)}</summary><ul>${ingredients.map(ingredient => `<li>${esc(ingredient)}</li>`).join("")}</ul>
+  <p>${esc(instructions)}</p><button class="secondary" data-use-recipe="${index}">Use these ingredients</button></details>`
+ ).join("");
+ return '<h2>Meal planning</h2>' + panel("Dinners this week",
+  `<div class="meal-week"><button class="secondary" data-meal-week="-1" aria-label="Previous week">‹</button>
+   <strong>${esc(format(days[0]))} – ${esc(format(days[6]))}</strong>
+   <button class="secondary" data-meal-week="1" aria-label="Next week">›</button></div>
+   <div class="meal-days">${days.map(date => {
+    const dateKey = mealDateKey(date);
+    const dayLabel = date.toLocaleDateString(undefined, {weekday: "long", month: "short", day: "numeric"});
+    const planned = mealPlan[dateKey];
+    return `<button class="secondary" data-meal-day="${dateKey}" aria-pressed="${dateKey === key}" aria-label="${esc(dayLabel + (planned ? ", " + planned.name : ""))}">${esc(date.toLocaleDateString(undefined, {weekday: "short"}))}${planned ? '<span aria-hidden="true"> •</span>' : ""}</button>`;
+   }).join("")}</div>
+   <form id="dinnerForm"><label for="dinnerName">Dinner for ${esc(mealDay.toLocaleDateString(undefined, {weekday: "long"}))}</label>
+    <input id="dinnerName" name="name" list="dinnerIdeas" maxlength="120" placeholder="e.g. Chicken Parmesan" required value="${esc(dinner?.name || "")}">
+    <datalist id="dinnerIdeas">${dinnerRecipes.map(group => `<option value="${esc(group.name)}"></option>`).join("")}</datalist>
+    <button class="add">Plan dinner</button></form>`)
+  + (dinner ? panel(esc(dinner.name),
+    (recipeCards ? '<h3>Recipe options</h3>' + recipeCards : '<p class="muted">Add your own ingredients for this dinner.</p>')
+    + (last ? `<details class="meal-recipe"><summary>What you used last time</summary><ul>${last.map(ingredient => `<li>${esc(ingredient)}</li>`).join("")}</ul><button class="secondary" id="useLastDinner">Use last time’s ingredients</button></details>` : "")
+    + `<form id="cookedDinner"><label for="dinnerIngredients">Ingredients you used</label>
+     <textarea id="dinnerIngredients" maxlength="4000" placeholder="One ingredient per line" required>${esc((dinner.ingredients || []).join("\n"))}</textarea>
+     <div class="meal-actions"><button class="add">Mark cooked</button><button type="button" class="secondary" id="removeDinner">Remove dinner</button></div>
+     <p id="mealMessage" role="status" class="muted">${dinner.cooked ? "Cooked · ingredients saved" : ""}</p></form>`) : "");
+}
+
+function bindMealPlanner() {
+ const key = mealDateKey(mealDay);
+ const dinner = mealPlan[key];
+ const form = document.getElementById("dinnerForm");
+ form.onsubmit = event => {
+  event.preventDefault();
+  const name = new FormData(form).get("name").trim();
+  if (!name) return;
+  mealPlan[key] = dinner && dinnerHistoryKey(dinner.name) === dinnerHistoryKey(name) ? {...dinner, name} : {name};
+  save();
+  render();
+ };
+ document.querySelectorAll("[data-meal-week]").forEach(button => button.onclick = () => {
+  mealDay.setDate(mealDay.getDate() + Number(button.dataset.mealWeek) * 7);
+  render();
+ });
+ document.querySelectorAll("[data-meal-day]").forEach(button => button.onclick = () => {
+  mealDay = new Date(button.dataset.mealDay + "T12:00:00");
+  render();
+ });
+ if (!dinner) return;
+ const field = document.getElementById("dinnerIngredients");
+ const useIngredients = ingredients => {
+  field.value = ingredients.join("\n");
+  field.focus();
+ };
+ document.querySelectorAll("[data-use-recipe]").forEach(button => button.onclick = () =>
+  useIngredients(recipesFor(dinner.name).versions[Number(button.dataset.useRecipe)][1]));
+ const last = document.getElementById("useLastDinner");
+ if (last) last.onclick = () => useIngredients(dinnerHistory[dinnerHistoryKey(dinner.name)]);
+ document.getElementById("cookedDinner").onsubmit = event => {
+  event.preventDefault();
+  const ingredients = field.value.split("\n").map(line => line.trim()).filter(Boolean);
+  if (!ingredients.length) return;
+  dinner.ingredients = ingredients;
+  dinner.cooked = true;
+  dinnerHistory[dinnerHistoryKey(dinner.name)] = ingredients;
+  save();
+  render();
+ };
+ document.getElementById("removeDinner").onclick = () => {
+  delete mealPlan[key];
+  save();
+  render();
+ };
+}
+
 function render(){nav();let v="";
+if (section === "Meals") v = mealPlanner();
 if (section === "Mood") v = "<h2>Wellness</h2>" + moodPanel();
 if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
 if (section === "Home") {
@@ -335,6 +464,7 @@ if(section==="Projects"){v=panel("Creative projects",data.projects.map(p=>`<div 
 if(section==="Routines"){let labels=["Make the bed","Morning skincare","Plan today's priorities","Evening reset"];v=panel("Daily routines",labels.map((x,i)=>`<div class="item"><input type="checkbox" data-routine="${i}" ${data.routines[i]?"checked":""}><span class="name">${x}</span></div>`).join("")+`<button class="secondary" id="resetRoutine">Reset checklist</button>`)}
 if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps, ideas, reminders, and anything on your mind.</p><textarea id="notes" placeholder="Get everything out of your head here…">${esc(data.notes)}</textarea><button class="secondary" id="copyNotes">Copy notes</button>`)}
 document.getElementById("view").innerHTML=v;bind();stats();
+ if (section === "Meals") bindMealPlanner();
  document.querySelectorAll("[data-pin-tool]").forEach(button => {
   button.onclick = () => {
    const page = button.dataset.pinTool;
