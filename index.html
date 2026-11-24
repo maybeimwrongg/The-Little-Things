@@ -103,6 +103,10 @@ input,textarea,select{background:var(--paper)}
 .task-reminder button{justify-self:start}
 .reminder-list{margin:0;padding-left:20px}
 .reminder-list li+li{margin-top:5px}
+.ingredient-choice{display:flex;gap:10px;align-items:center;min-height:44px}
+.ingredient-choice input{width:20px;height:20px;flex:none;accent-color:var(--sage)}
+.ingredient-choice span{overflow-wrap:anywhere}
+:focus-visible{outline:2px solid var(--sage);outline-offset:3px}
 </style>
 </head>
 <body>
@@ -323,11 +327,11 @@ function mealPlanner() {
     <button class="add">Plan dinner</button></form>`)
   + (dinner ? panel(esc(dinner.name),
     (recipeCards ? '<h3>Recipe options</h3>' + recipeCards : '<p class="muted">Add your own ingredients for this dinner.</p>')
-    + (last ? `<details class="meal-recipe"><summary>What you used last time</summary><ul>${last.map(ingredient => `<li>${esc(ingredient)}</li>`).join("")}</ul><button class="secondary" id="useLastDinner">Use last time’s ingredients</button></details>` : "")
+    + (last ? `<details class="meal-recipe"><summary>What you used last time</summary><ul>${last.map(ingredient => `<li>${esc(ingredient)}</li>`).join("")}</ul><button class="secondary" id="useLastDinner">Use last time’s ingredients</button> <button class="secondary" id="shopLastDinner">Shop last time’s ingredients</button></details>` : "")
     + `<form id="cookedDinner"><label for="dinnerIngredients">Ingredients you used</label>
      <textarea id="dinnerIngredients" maxlength="4000" placeholder="One ingredient per line" required>${esc((dinner.ingredients || []).join("\n"))}</textarea>
-     <div class="meal-actions"><button class="add">Mark cooked</button><button type="button" class="secondary" id="removeDinner">Remove dinner</button></div>
-     <p id="mealMessage" role="status" class="muted">${dinner.cooked ? "Cooked · ingredients saved" : ""}</p></form>`) : "");
+     <div class="meal-actions"><button type="button" class="secondary" id="shopDinnerIngredients">Send to groceries</button><button class="add">Mark cooked</button><button type="button" class="secondary" id="removeDinner">Remove dinner</button></div>
+     <p id="mealMessage" role="status" class="muted">${dinner.cooked ? "Cooked · ingredients saved" : ""}</p></form><div id="mealGroceryPicker"></div>`) : "");
 }
 
 function bindMealPlanner() {
@@ -360,9 +364,52 @@ function bindMealPlanner() {
   useIngredients(recipesFor(dinner.name).versions[Number(button.dataset.useRecipe)][1]));
  const last = document.getElementById("useLastDinner");
  if (last) last.onclick = () => useIngredients(dinnerHistory[dinnerHistoryKey(dinner.name)]);
+ const picker = document.getElementById("mealGroceryPicker");
+ const message = document.getElementById("mealMessage");
+ const ingredientsFromField = () => field.value.split("\n").map(line => line.trim()).filter(Boolean);
+ const chooseGroceries = ingredients => {
+  const options = [...new Map(ingredients.map(item => [mealNameKey(item), item])).values()];
+  if (!options.length) {
+   message.textContent = "Add some ingredients to get started.";
+   field.focus();
+   return;
+  }
+  message.textContent = "";
+  picker.innerHTML = `<form id="mealGroceryForm"><fieldset><legend>Which ingredients do you need?</legend>
+   ${options.map((item, index) => `<label class="ingredient-choice"><input type="checkbox" name="item" value="${index}" checked><span>${esc(item)}</span></label>`).join("")}
+   </fieldset><div class="meal-actions"><button class="add">Add selected to groceries</button><button type="button" class="secondary" id="cancelMealGroceries">Cancel</button></div>
+   <p id="mealGroceryStatus" role="status"></p></form>`;
+  const groceryForm = document.getElementById("mealGroceryForm");
+  groceryForm.querySelector("input").focus();
+  document.getElementById("cancelMealGroceries").onclick = () => {
+   picker.innerHTML = "";
+   document.getElementById("shopDinnerIngredients").focus();
+  };
+  groceryForm.onsubmit = event => {
+   event.preventDefault();
+   const status = document.getElementById("mealGroceryStatus");
+   const checked = new FormData(groceryForm).getAll("item");
+   if (!checked.length) { status.textContent = "Select at least one ingredient."; return; }
+   const existing = new Set(data.groceries.filter(item => !item.done).map(item => mealNameKey(item.name)));
+   const additions = checked.map(index => options[Number(index)]).filter(item => !existing.has(mealNameKey(item)));
+   const firstId = Math.max(Date.now(), ...data.groceries.map(item => Number(item.id) + 1 || 0));
+   const before = data.groceries;
+   data.groceries = before.concat(additions.map((name, index) => ({
+    id: firstId + index, name, category:"Other", qty:"", brand:"", description:"", photo:"", done:false
+   })));
+   try { save(); }
+   catch { data.groceries = before; status.textContent = "Could not save groceries on this device."; return; }
+   status.textContent = additions.length
+    ? "Added " + additions.length + (additions.length === 1 ? " ingredient." : " ingredients.")
+    : "The selected ingredients are already on your list.";
+  };
+ };
+ document.getElementById("shopDinnerIngredients").onclick = () => chooseGroceries(ingredientsFromField());
+ const shopLast = document.getElementById("shopLastDinner");
+ if (shopLast) shopLast.onclick = () => chooseGroceries(dinnerHistory[dinnerHistoryKey(dinner.name)]);
  document.getElementById("cookedDinner").onsubmit = event => {
   event.preventDefault();
-  const ingredients = field.value.split("\n").map(line => line.trim()).filter(Boolean);
+  const ingredients = ingredientsFromField();
   if (!ingredients.length) return;
   dinner.ingredients = ingredients;
   dinner.cooked = true;
