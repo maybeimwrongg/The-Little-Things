@@ -83,6 +83,7 @@ input,textarea,select{background:var(--paper)}
 .profile-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .profile-options button[aria-pressed="true"]{outline:2px solid var(--sage);outline-offset:1px}
 .profile-actions{margin-top:14px}
+.welcome-note .welcome-mood{font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;grid-column:1/-1;text-align:left}
 </style>
 </head>
 <body>
@@ -112,6 +113,11 @@ let aesthetic = aesthetics.some(([id]) => id === savedAesthetic) ? savedAestheti
 let choosingFirstTheme = !savedAesthetic;
 let section = choosingFirstTheme ? "Appearance" : "Home";
 let choosingFirstPicture = false;
+const moodKey = "littleThingsMood";
+const moods = [["happy","😊","Happy"],["calm","😌","Calm"],["tired","😴","Tired"],["stressed","😟","Stressed"],["down","😔","Down"]];
+let mood = "";
+try { mood = localStorage.getItem(moodKey) || ""; } catch {}
+
 const profileKey = "littleThingsProfilePicture";
 const avatars = { flower: ["🌼", "Flower"], cat: ["🐱", "Cat"], moon: ["🌙", "Moon"], berry: ["🍓", "Strawberry"] };
 let profilePicture = "";
@@ -201,8 +207,9 @@ function render(){nav();let v="";
 if(section==="Circles"){v=panel("Your circles",`<p class="muted">Join the people in your life. Each circle has its own shared space. In this prototype, sharing is shown locally; live multi-account syncing will need a secure online backend.</p><form class="row" id="circleForm"><input name="name" placeholder="Create a circle…" required><button class="add">Create</button></form>`)+data.circles.map(c=>panel("◎ "+esc(c.name),`<div class="muted">${c.members.length} member${c.members.length===1?"":"s"}</div><p><b>Sharing setting:</b> Everything shared automatically with members of this circle.</p><div class="muted">Members</div>${c.members.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}<div class="muted" style="margin-top:10px">Activity</div>${c.activity.slice(-5).reverse().map(a=>`<div class="item"><span class="name">${esc(a)}</span></div>`).join("")}<form class="row" data-invite="${c.id}"><input name="member" placeholder="Add member name…" required><button class="secondary">Add</button></form><button class="delete" data-circle-del="${c.id}">Remove circle</button>`)).join("")}
 if (section === "Home") {
  const upcoming = data.events.slice(0, 3).map(event => `<div class="item"><span class="name">${esc(event.name)}</span><span class="muted">${esc(event.day)}</span></div>`).join("") || '<p class="muted">No plans yet.</p>';
+ const currentMood = moods.find(([id]) => id === mood);
  const greeting = data.displayName ? ', <span>' + esc(data.displayName) + '</span>' : '';
- v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button></aside>'
+ v = '<aside class="welcome-note" aria-label="Welcome"><div class="welcome-identity">' + profileAvatar() + '<p>Welcome back' + greeting + '</p></div><button id="editGreeting" type="button">' + (data.displayName ? 'Edit name' : 'Add name') + '</button><button class="welcome-mood" type="button" data-go="Profile">' + (currentMood ? 'Mood: ' + currentMood[1] + ' ' + currentMood[2] : 'Set mood') + '</button></aside>'
   + '<h2>Today</h2><p class="task-summary"><strong id="taskStat"></strong> tasks complete</p>' 
   + panel("Priority tasks", checkList(data.tasks.slice(0, 3), "tasks") + '<button class="secondary" data-go="Tasks">All tasks</button>')
   + panel("Upcoming plans", upcoming + '<button class="secondary" data-go="Calendar">Open calendar</button>');
@@ -226,7 +233,12 @@ if (section === "Profile") {
    + '<p id="profileError" role="status" class="muted"></p><div class="profile-actions">'
    + (profilePicture ? '<button class="secondary" data-avatar="">Remove picture</button> ' : '')
    + (choosingFirstPicture ? '<button class="add" id="finishProfile">' + (profilePicture ? 'Continue' : 'Skip for now') + '</button>' : '')
-   + '</div>');
+   + '</div>')
+  + (choosingFirstPicture ? '' : panel("Mood",
+   '<p class="muted">Your mood is saved on this device.</p><div class="profile-options">'
+   + moods.map(([id, icon, label]) => `<button class="secondary" data-mood="${id}" aria-pressed="${mood === id}"><span aria-hidden="true">${icon}</span> ${label}</button>`).join("")
+   + (mood ? '<button class="secondary" data-mood="">Clear mood</button>' : '')
+   + '</div><p id="moodError" role="status" class="muted"></p>'));
 }
 if (section === "More") {
  const links = sections.filter(([name]) => !["Home", "Calendar", "Tasks"].includes(name));
@@ -278,6 +290,18 @@ if(section==="Notes"){v=panel("My little notebook",`<p class="muted">Brain dumps
 document.getElementById("view").innerHTML=v;bind();stats();
  document.querySelectorAll("[data-set-aesthetic]").forEach(button => {
   button.onclick = () => chooseAesthetic(button.dataset.setAesthetic);
+ });
+ document.querySelectorAll("[data-mood]").forEach(button => {
+  button.onclick = () => {
+   try {
+    const nextMood = button.dataset.mood;
+    localStorage.setItem(moodKey, nextMood);
+    mood = nextMood;
+    render();
+    const focus = document.querySelector(nextMood ? '[data-mood="' + nextMood + '"]' : '[data-mood]');
+    focus?.focus();
+   } catch { document.getElementById("moodError").textContent = "Could not save your mood on this device."; }
+  };
  });
  document.querySelectorAll("[data-avatar]").forEach(button => {
   button.onclick = () => {
