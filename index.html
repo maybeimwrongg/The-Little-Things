@@ -313,10 +313,10 @@ const toolGroups = [
  ["Money", [["Money", "Bills & budget"], ["Wishlist", "Wishlist"]]],
  ["Wellness", [["Mood", "Mood"], ["Routines", "Daily routines"]]],
  ["Creative & personal", [["Projects", "Creative projects"], ["Notes", "Notes"]]],
- ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"], ["Quick tour", "Quick tour"]]]
+ ["Settings", [["Profile", "Profile"], ["Appearance", "Appearance"], ["Quick tour", "Quick tour"], ["Feedback", "Feedback"]]]
 ];
 const toolLinks = toolGroups.flatMap(([, links]) => links);
-const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"], ["Quick tour", "?" ]]);
+const toolIcons = new Map([...sections, ["Mood", "☺"], ["Profile", "○"], ["Appearance", "✦"], ["Meals", "♨"], ["Occasions", "🎂"], ["Weather", "☀"], ["Quick tour", "?" ], ["Feedback", "✎"]]);
 const pinnedToolsKey = "littleThingsPinnedTools";
 let pinnedTools = [];
 try {
@@ -904,7 +904,59 @@ function bindWeather() {
  };
 }
 
+const feedbackKey = "littleThingsFeedbackDraft";
+const feedbackTypes = ["General feedback", "Report a bug", "Suggest a feature"];
+
+function feedbackPanel() {
+ let draft = {};
+ try { draft = JSON.parse(localStorage.getItem(feedbackKey)) || {}; } catch {}
+ return "<h2>Feedback</h2>" + panel("Tell us what you think", `<form id="feedbackForm">
+  <label for="feedbackType">Type</label><select id="feedbackType" name="type">
+  ${feedbackTypes.map(type => `<option ${draft.type === type ? "selected" : ""}>${type}</option>`).join("")}</select>
+  <label for="feedbackMessage">Your feedback</label>
+  <textarea id="feedbackMessage" name="message" maxlength="2000" placeholder="What worked well, felt confusing, or could be better?" required>${esc(draft.message || "")}</textarea>
+  <p class="muted">Your draft stays on this device. Use Share or Copy to send it to the person who invited you.</p>
+  <div class="setup-actions"><button class="add">Share feedback</button><button type="button" class="secondary" id="copyFeedback">Copy feedback</button></div>
+  <p id="feedbackStatus" role="status" class="muted"></p></form>`);
+}
+
+function bindFeedback() {
+ const form = document.getElementById("feedbackForm");
+ const status = document.getElementById("feedbackStatus");
+ const message = form.elements.message;
+ const type = form.elements.type;
+ form.oninput = () => {
+  try { localStorage.setItem(feedbackKey, JSON.stringify({type:type.value, message:message.value})); }
+  catch { status.textContent = "This draft could not be saved on this device."; }
+ };
+ const feedbackText = () => {
+  if (message.value.trim()) return "The Little Things · " + type.value + "\n\n" + message.value.trim();
+  status.textContent = "Write a little feedback first.";
+  message.focus();
+  return "";
+ };
+ async function copyFeedback(text) {
+  try { await navigator.clipboard.writeText(text); status.textContent = "Copied. Paste it into a message to share it."; }
+  catch { message.focus(); message.select(); status.textContent = "Copy your selected feedback and paste it into a message."; }
+ }
+ document.getElementById("copyFeedback").onclick = () => {
+  const text = feedbackText();
+  if (text) copyFeedback(text);
+ };
+ form.onsubmit = async event => {
+  event.preventDefault();
+  const text = feedbackText();
+  if (!text) return;
+  if (!navigator.share) { await copyFeedback(text); return; }
+  try { await navigator.share({text}); }
+  catch (error) {
+   if (error.name !== "AbortError") status.textContent = "Sharing is unavailable. You can use Copy feedback.";
+  }
+ };
+}
+
 function render(){nav();let v="";
+if (section === "Feedback") v = feedbackPanel();
 if (section === "Welcome setup") v = welcomeSetup();
 if (section === "Quick tour") v = quickTour();
 if (section === "Weather") v = weatherPanel();
@@ -1015,6 +1067,7 @@ document.getElementById("view").innerHTML=v;bind();stats();
  if (section === "Meals") bindMealPlanner();
  if (section === "Appearance") bindTypography();
  if (section === "Welcome setup") bindWelcomeSetup();
+ if (section === "Feedback") bindFeedback();
  if (section === "Quick tour") {
   document.getElementById("finishTour").onclick = finishQuickTour;
   const skip = document.getElementById("skipTour");
